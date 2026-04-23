@@ -12,13 +12,13 @@ Tutti i contenuti sono **materiale didattico** destinato esclusivamente a ambien
 
 | Nome | Ruolo |
 |------|-------|
-| **Lorenzo Petrucci** | Penetration Tester, Lead |
-| **Christian Koscielniak Pinto** | Security Analyst |
-| **Gabriele Chinnici** | Exploit Developer |
-| **Wafa Saghir** | Incident Response |
-| **Amy Antonella Acosta Hugo** | Malware Analysis |
-| **Domenico Mendola** | Network Security |
-| **Corrado Vaccarecci** | Infrastructure Hardening |
+| **Lorenzo Petrucci** | Team Leader, Pen Testing, CTF, Codice & Report |
+| **Christian Koscielniak Pinto** | Pen Testing, CTF, Codice & Report |
+| **Gabriele Chinnici** | LLM Specialist, Pen Testing & Codice |
+| **Wafa Saghir** | C Development, Malware analysis & Report Maker |
+| **Amy Antonella Acosta Hugo** | C Development, malware analysis & Report Maker |
+| **Domenico Mendola** | Pen testing, CTF & Codice |
+| **Corrado Vaccarecci** | Pen testing, CTF & Codice |
 
 ## 🗂️ Struttura del Repository
 
@@ -121,33 +121,18 @@ Tutti i contenuti sono **materiale didattico** destinato esclusivamente a ambien
 **Output:** Report dettagliato con screenshots della catena di exploit  
 **Status:** ✅ Completato
 
+### Task Extra: CTF Harry Potter - EPICODE
+**Descrizione:** CTF livello DIFFICILE - Capture The Flag con 3 bandiere differenti
+**Tool:** network reconnaissance, privilege escalation, SQLi, Knocking, Decriptaggio.  
+**Output:** Report dettagliato con screenshots della catena di exploit  
+**Status:** ✅ Completato
+
 ### Task Bonus: Il Riccio Pazzo — AI-Powered CTF
 **Descrizione:** Challenge innovativa che combina Streamlit, OpenAI API e puzzle CTF. Interfaccia interattiva per risolvere enigmi di sicurezza con assistenza IA.  
 **Tool:** Streamlit, Python, OpenAI API, Streamlit Secrets  
 **Output:** Applicazione web interattiva, source code, documentazione setup  
 **Status:** ✅ Completato (Repository GitHub esterno)  
 **Link:** https://github.com/Olliys/Riccio-Pazzo-CTF
-
----
-
-## 🧪 Tech Stack & Tool
-
-| Categoria | Tool | Utilizzo |
-|-----------|------|----------|
-| **Vulnerability Assessment** | DVWA, DVWS | Target pratiche SQLi/XSS |
-| | Nessus | Ricognizione Samba |
-| | Nmap | Network mapping, port scanning |
-| **Exploit Development** | Burp Suite | Web proxy, intercepting |
-| | GDB | Debugging buffer overflow |
-| | GCC | Compilation exploit C |
-| | Metasploit Framework | Modular exploitation |
-| | Kernel exploits (CVE-45010) | Privilege escalation |
-| **Data Extraction** | Python 3 | Cookie catcher, scripting |
-| | Flask | Web server per XSS payload |
-| | MySQL | Database queries (SQLi) |
-| **Reporting** | HTML, PDF | Documentazione report |
-| | Screenshots | Evidence gathering |
-| **Defensive** | WAF (teorico) | Defense evasion (slides) |
 
 ---
 
@@ -188,15 +173,6 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt  # se presente
 python cookie_catcher.py
-```
-
-### 4. Setup DVWA Locale (opzionale)
-```bash
-# Docker
-docker run -d -p 80:80 -p 3306:3306 vulnerables/web-dvwa:latest
-
-# Accedi su http://localhost:80
-# Default: admin / password
 ```
 
 ---
