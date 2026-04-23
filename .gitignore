@@ -1,0 +1,80 @@
+# === Claude AI / LLM ===
+# Non caricare file di configurazione o prompt di Claude
+claude.md
+.claude
+.claude/
+CLAUDE.md
+claude_config.*
+.cursorrules
+.cursor/
+
+# === Prompt e template interni ===
+PROMPT_MASTER*.md
+prompt_master*.md
+
+# === File sensibili ===
+*.key
+*.pem
+*.crt
+*.pfx
+*.p12
+id_rsa*
+*.env
+.env.*
+credentials*
+secrets*
+tokens*
+
+# === Dump e dati sensibili ===
+*.dump
+*.dmp
+*.pcap
+*.pcapng
+loot/
+exfil/
+
+# === Hash e wordlist ===
+*.pot
+rockyou*.txt
+wordlists/
+
+# === OS e IDE ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# === Node ===
+node_modules/
+package-lock.json
+
+# === Build e temp ===
+*.o
+*.out
+*.exe
+*.dll
+*.so
+dist/
+build/
+tmp/
+temp/
+
+# === Log ===
+*.log
+
+# === Backup ===
+*.bak
+*.backup
+*.old
