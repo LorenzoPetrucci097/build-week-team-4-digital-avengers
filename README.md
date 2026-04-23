@@ -59,7 +59,16 @@ Tutti i contenuti sono **materiale didattico** destinato esclusivamente a ambien
 │   ├── Report_BuildWeek_Task_Extra01_Jangow01_DigitalAvengers.pdf
 │   └── img/                       # Netdiscover, Gobuster, kernel exploit
 │
-├── CTF-LupinOne/                  # Riservato per future esercitazioni
+├── CTF-LupinOne/                  # CTF Challenge — Lupin Security
+│   ├── CTF_LupinOne_Report.pdf
+│   └── img/                       # Screenshot della soluzione
+│
+├── CTF Extra - Il Riccio Pazzo/   # AI-Powered CTF Challenge (Streamlit + OpenAI)
+│   ├── Riccio/
+│   │   ├── Riccio2.py             # Applicazione Streamlit interactive
+│   │   ├── requirements.txt       # Dipendenze Python (OpenAI SDK, etc)
+│   │   └── .venv/                 # Environment (escluso da git)
+│   └── README.md                  # Documentazione setup
 │
 ├── final_summary/                 # Sintesi progettuale
 │
@@ -105,6 +114,19 @@ Tutti i contenuti sono **materiale didattico** destinato esclusivamente a ambien
 **Tool:** Gobuster, nmap, kernel exploit, prompt injection  
 **Output:** Report PDF con walkthrough completo  
 **Status:** ✅ Completato
+
+### Task Extra: CTF Lupin One
+**Descrizione:** Sfida di penetration testing indipendente con focus su exploitation e post-exploitation.  
+**Tool:** Metasploit, network reconnaissance, privilege escalation  
+**Output:** Report dettagliato con screenshots della catena di exploit  
+**Status:** ✅ Completato
+
+### Task Bonus: Il Riccio Pazzo — AI-Powered CTF
+**Descrizione:** Challenge innovativa che combina Streamlit, OpenAI API e puzzle CTF. Interfaccia interattiva per risolvere enigmi di sicurezza con assistenza IA.  
+**Tool:** Streamlit, Python, OpenAI API, Streamlit Secrets  
+**Output:** Applicazione web interattiva, source code, documentazione setup  
+**Status:** ✅ Completato (Repository GitHub esterno)  
+**Link:** https://github.com/Olliys/Riccio-Pazzo-CTF
 
 ---
 
