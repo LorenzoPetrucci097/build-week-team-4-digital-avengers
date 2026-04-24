@@ -49,13 +49,20 @@
 // https://github.com/LorenzoPetrucci097/build-week-team-4-digital-avengers
 
 const MEMBERS = [
-  { id: "lp", name: "Lorenzo Petrucci",            role: "Team Leader · Pen Testing / CTF / Report", status: "online", initials: "LP" },
-  { id: "ck", name: "Christian Koscielniak Pinto", role: "Pen Testing · CTF · Report",               status: "online", initials: "CK" },
-  { id: "gc", name: "Gabriele Chinnici",           role: "LLM Specialist · Pen Testing",             status: "online", initials: "GC" },
-  { id: "ws", name: "Wafa Saghir",                 role: "C Dev · Malware Analysis · Report",        status: "online", initials: "WS" },
-  { id: "aa", name: "Amy Antonella Acosta Hugo",   role: "C Dev · Malware Analysis · Report",        status: "online", initials: "AA" },
-  { id: "dm", name: "Domenico Mendola",            role: "Pen Testing · CTF · Code",                 status: "online", initials: "DM" },
-  { id: "cv", name: "Corrado Vaccarecci",          role: "Pen Testing · CTF · Code",                 status: "online", initials: "CV" },
+  { id: "lp", name: "Lorenzo Petrucci",            role: "Team Leader · Pen Testing / CTF / Report", status: "online", initials: "LP",
+    bio: "Team leader del gruppo. Ha partecipato attivamente a ogni task della build week, con concentrazione specifica sul Day 2 (XSS e cookie theft) e su tutte le CTF del team: Jangow01, Lupin One, Harry Potter / EPICODE e Il Riccio Pazzo.", github: null },
+  { id: "ck", name: "Christian Koscielniak Pinto", role: "Pen Testing · CTF · Report",               status: "online", initials: "CK",
+    bio: "Pen tester e cacciatore di flag. Ha collaborato con Lorenzo sulle attività LLM e su tutte le CTF della build week, contribuendo all'analisi degli exploit e alla redazione dei report tecnici.", github: null },
+  { id: "gc", name: "Gabriele Chinnici",           role: "LLM Specialist · Pen Testing",             status: "online", initials: "GC",
+    bio: "LLM specialist del team. Ha risolto la CTF Jangow01 con kernel exploit (CVE-45010) e progettato 'Il Riccio Pazzo', una CTF AI-powered costruita con Streamlit e OpenAI API. Unisce sicurezza offensiva e intelligenza artificiale applicata.", github: null },
+  { id: "ws", name: "Wafa Saghir",                 role: "C Dev · Malware Analysis · Report",        status: "online", initials: "WS",
+    bio: "Sviluppatrice C e analista malware. Ha implementato due exploit di buffer overflow (BoF #1 e BoF #2) con debugging GDB, incluso menu interattivo e report passo-passo (Day 3). Specializzata in analisi a basso livello e sicurezza del software.", github: null },
+  { id: "aa", name: "Amy Antonella Acosta Hugo",   role: "C Dev · Malware Analysis · Report",        status: "online", initials: "AA",
+    bio: "Sviluppatrice C e analista malware. Ha completato la CTF Hard 'Harry Potter / EPICODE' raccogliendo tre bandiere tramite SQL injection, port knocking e decrittografia AES. Produce report tecnici dettagliati con screenshot e catena d'attacco completa.", github: null },
+  { id: "dm", name: "Domenico Mendola",            role: "Pen Testing · CTF · Code",                 status: "online", initials: "DM",
+    bio: "Penetration tester specializzato in exploitation di servizi di rete. Ha condotto la ricognizione Samba con Nessus e Nmap, identificato CVE-2007-2447 e costruito l'exploit completo documentando l'intera kill-chain (Day 4).", github: null },
+  { id: "cv", name: "Corrado Vaccarecci",          role: "Pen Testing · CTF · Code",                 status: "online", initials: "CV",
+    bio: "Penetration tester e appassionato di CTF. Ha completato la CTF Lupin One con network recon, bruteforce della passphrase SSH e privilege escalation via sudo NOPASSWD. Produce walkthrough chiari e riproducibili con IOC documentati.", github: null },
 ];
 
 const REPO = {
@@ -208,7 +215,7 @@ const KPIS = [
 const CONTACTS = [
   { icon: "Github",       label: `github.com/${REPO.org}/${REPO.name}`, href: REPO.url },
   { icon: "ExternalLink", label: "buildweek.epicode",                    href: REPO.url },
-  { icon: "Mail",         label: "squad07@digital-avengers.dev",         href: "#" },
+  { icon: "Mail",         label: "squad04@digital-avengers.dev",         href: "#" },
 ];
 
 Object.assign(window, { MEMBERS, PROJECTS, MILESTONES, KPIS, CONTACTS, REPO, blob, tree });
@@ -336,6 +343,140 @@ function Card({ className = "", children, ...rest }) {
 }
 
 Object.assign(window, { Icon, StatusDot, Badge, ClassifiedStamp, Kbd, Avatar, SectionLabel, Card });
+
+// ---- Member Profile Modal ----
+const MemberModalContext = React.createContext(null);
+
+function MemberModalProvider({ children }) {
+  const [memberId, setMemberId] = React.useState(null);
+  const open  = React.useCallback((id) => setMemberId(id), []);
+  const close = React.useCallback(() => setMemberId(null), []);
+  return (
+    <MemberModalContext.Provider value={{ open, close }}>
+      {children}
+      <MemberProfileModal memberId={memberId} onClose={close} />
+    </MemberModalContext.Provider>
+  );
+}
+
+function useMemberModal() {
+  const v = React.useContext(MemberModalContext);
+  if (!v) throw new Error("useMemberModal must be inside MemberModalProvider");
+  return v;
+}
+
+function MemberProfileModal({ memberId, onClose }) {
+  const member = MEMBERS.find(m => m.id === memberId);
+  const deliverables = member ? PROJECTS.filter(p => p.owner === member.initials) : [];
+
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    if (memberId) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [memberId, onClose]);
+
+  if (!member) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div className="pointer-events-none absolute inset-0 da-grid-bg opacity-30" aria-hidden="true" />
+      <div
+        className="da-rise relative w-full max-w-lg overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.9)]"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Traffic-light titlebar */}
+        <div className="flex h-10 items-center gap-2 border-b border-slate-800 bg-slate-900/80 px-3">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500/80" />
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400/80" />
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+          <span className="ml-2 font-mono text-[11px] text-slate-500">
+            <span className="text-emerald-400">operator</span>
+            <span className="text-slate-600">@</span>
+            <span className="text-sky-400">digital-avengers</span>
+            <span className="text-slate-600"> ~ </span>
+            <span className="text-slate-400">profile/{member.id}</span>
+          </span>
+          <button
+            onClick={onClose}
+            className="ml-auto rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
+            title="close"
+          >
+            <Icon name="X" size={13} />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {/* Identity block */}
+          <div className="flex items-start gap-4">
+            <Avatar initials={member.initials} size={56} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-[18px] font-semibold tracking-tight text-slate-100">{member.name}</h2>
+                <StatusDot tone="emerald" pulse size={8} />
+              </div>
+              <div className="mt-0.5 font-mono text-[11px] text-emerald-400">{member.role}</div>
+              <div className="mt-1.5 inline-flex items-center gap-1.5 rounded border border-slate-800 bg-slate-900 px-2 py-0.5 font-mono text-[10px] text-slate-400">
+                <Icon name="Shield" size={10} className="text-slate-500" />
+                squad-04 · operator
+              </div>
+            </div>
+          </div>
+
+          {/* Bio */}
+          <p className="mt-4 border-l-2 border-emerald-500/40 pl-3 text-[13px] leading-relaxed text-slate-400">
+            {member.bio}
+          </p>
+
+          {/* Deliverables */}
+          {deliverables.length > 0 && (
+            <div className="mt-5">
+              <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">// deliverables</div>
+              <ul className="space-y-1.5">
+                {deliverables.map(p => (
+                  <li key={p.id}>
+                    <a
+                      href={p.url} target="_blank" rel="noreferrer"
+                      className="group flex items-center gap-3 rounded-md border border-slate-800 bg-slate-900 px-3 py-2 transition-colors hover:border-emerald-500/40"
+                    >
+                      <ClassifiedStamp level={p.sec} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[12px] font-semibold text-slate-200 group-hover:text-emerald-300">{p.title}</span>
+                        <span className="font-mono text-[10px] text-slate-500">{p.id} · {p.tags.slice(0, 3).join(", ")}</span>
+                      </span>
+                      <Icon name="ArrowUpRight" size={12} className="shrink-0 text-slate-600 group-hover:text-emerald-400" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* GitHub + status footer */}
+          <div className="mt-5 flex items-center justify-between border-t border-slate-800 pt-4">
+            <div className="flex items-center gap-2 font-mono text-[12px]">
+              <Icon name="Github" size={14} className="text-slate-500" />
+              {member.github
+                ? <a href={member.github} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-emerald-400">
+                    {member.github.replace("https://github.com/", "")}
+                  </a>
+                : <span className="italic text-slate-600">github — coming soon</span>
+              }
+            </div>
+            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-emerald-400">
+              <StatusDot tone="emerald" size={6} /> online
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.MemberModalProvider = MemberModalProvider;
+window.useMemberModal = useMemberModal;
 
 // Auth — username = first name (lowercase), password = last name (lowercase).
 // State is in-memory per session, re-login required on refresh (no password storage).
@@ -1060,7 +1201,7 @@ function Terminal() {
       "",
       `  repo:     ${REPO.url}`,
       `  branch:   ${REPO.branch}`,
-      `  contact:  squad07@digital-avengers.dev`,
+      `  contact:  squad04@digital-avengers.dev`,
       "",
     ]);
   }
@@ -1238,6 +1379,7 @@ window.useTerminalUI = useTerminalUI;
 
 function Sidebar({ active, onNavigate }) {
   const termUI = useTerminalUI();
+  const { open: openMember } = useMemberModal();
   const nav = [
     { id: "overview",   label: "Overview",     icon: "LayoutDashboard" },
     { id: "metrics",    label: "Metrics",      icon: "Activity" },
@@ -1318,8 +1460,11 @@ function Sidebar({ active, onNavigate }) {
         <ul className="space-y-0.5">
           {MEMBERS.map((m) => (
             <li key={m.id}>
-              <div className="flex items-center gap-2.5 rounded-md px-3 py-1.5 hover:bg-slate-800/50">
-                <div className="relative">
+              <button
+                onClick={() => openMember(m.id)}
+                className="group flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-left transition-colors hover:bg-slate-800/60"
+              >
+                <div className="relative shrink-0">
                   <Avatar initials={m.initials} size={24} />
                   <span
                     className="absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-500 ring-2 ring-slate-900"
@@ -1327,10 +1472,11 @@ function Sidebar({ active, onNavigate }) {
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[12px] text-slate-200">{m.name.split(" ").slice(0,2).join(" ")}</div>
+                  <div className="truncate text-[12px] text-slate-200 group-hover:text-emerald-300">{m.name.split(" ").slice(0,2).join(" ")}</div>
                   <div className="truncate font-mono text-[10px] text-slate-500">{m.role.toLowerCase()}</div>
                 </div>
-              </div>
+                <Icon name="ChevronRight" size={11} className="shrink-0 text-slate-700 group-hover:text-emerald-400" />
+              </button>
             </li>
           ))}
         </ul>
@@ -1596,6 +1742,7 @@ function TopBar({ section, onNavigate }) {
 window.TopBar = TopBar;
 
 function Hero() {
+  const { open: openMember } = useMemberModal();
   return (
     <section className="da-rise overflow-hidden rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950/40">
       <div className="relative da-grid-bg">
@@ -1603,7 +1750,7 @@ function Hero() {
         <div className="flex items-center justify-between border-b border-slate-800/80 px-6 py-2.5">
           <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest text-slate-500">
             <span className="inline-flex items-center gap-1.5">
-              <StatusDot tone="emerald" pulse size={7} /> squad-07
+              <StatusDot tone="emerald" pulse size={7} /> squad-04
             </span>
             <span className="text-slate-700">·</span>
             <span className="text-teal-400">build-week-cyber</span>
@@ -1664,18 +1811,26 @@ function Hero() {
               <span className="font-mono text-[10px] text-emerald-400">07/07 ONLINE</span>
             </div>
             <div className="mt-3 grid grid-cols-4 gap-2">
-              {MEMBERS.map((m) => (
-                <div key={m.id} className="group relative" title={`${m.name} — ${m.role}`}>
-                  <div className="relative flex aspect-square items-center justify-center rounded-md border border-slate-800 bg-slate-900/80 transition-colors hover:border-emerald-500/40 hover:bg-slate-900">
-                    <Avatar initials={m.initials} size={28} />
-                    <span className="absolute bottom-1 right-1 block h-1.5 w-1.5 rounded-full bg-emerald-500 ring-1 ring-slate-900" />
+              {MEMBERS.map((m, i) => {
+                // grid-cols-4 with 8 items = 2 rows; bottom row (i >= 4) clips under overflow-hidden
+                const tooltipUp = i >= 4;
+                return (
+                  <div key={m.id} className="group relative">
+                    <button
+                      onClick={() => openMember(m.id)}
+                      title={`${m.name} — ${m.role}`}
+                      className="relative flex w-full aspect-square items-center justify-center rounded-md border border-slate-800 bg-slate-900/80 transition-colors hover:border-emerald-500/40 hover:bg-slate-900 cursor-pointer"
+                    >
+                      <Avatar initials={m.initials} size={28} />
+                      <span className="absolute bottom-1 right-1 block h-1.5 w-1.5 rounded-full bg-emerald-500 ring-1 ring-slate-900" />
+                    </button>
+                    <div className={`pointer-events-none absolute left-1/2 z-[300] w-max -translate-x-1/2 scale-95 rounded-md border border-slate-800 bg-slate-950 px-2 py-1 opacity-0 shadow-xl transition-all group-hover:scale-100 group-hover:opacity-100 ${tooltipUp ? "bottom-full mb-1.5" : "top-full mt-1.5"}`}>
+                      <div className="text-[11px] text-slate-200">{m.name}</div>
+                      <div className="font-mono text-[10px] text-emerald-400">online · {m.role.toLowerCase()}</div>
+                    </div>
                   </div>
-                  <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 w-max -translate-x-1/2 scale-95 rounded-md border border-slate-800 bg-slate-950 px-2 py-1 opacity-0 shadow-xl transition-all group-hover:scale-100 group-hover:opacity-100">
-                    <div className="text-[11px] text-slate-200">{m.name}</div>
-                    <div className="font-mono text-[10px] text-emerald-400">online · {m.role.toLowerCase()}</div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="flex aspect-square items-center justify-center rounded-md border border-dashed border-slate-800 font-mono text-[10px] text-slate-600">
                 +0
               </div>
@@ -2429,7 +2584,9 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <AuthProvider>
     <TerminalUIProvider>
-      <DigitalAvengersDashboard />
+      <MemberModalProvider>
+        <DigitalAvengersDashboard />
+      </MemberModalProvider>
     </TerminalUIProvider>
   </AuthProvider>
 );
