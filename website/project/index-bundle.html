@@ -49,20 +49,20 @@
 // https://github.com/LorenzoPetrucci097/build-week-team-4-digital-avengers
 
 const MEMBERS = [
-  { id: "lp", name: "Lorenzo Petrucci",            role: "Team Leader · Pen Testing / CTF / Report", status: "online", initials: "LP",
-    bio: "Team leader del gruppo. Ha partecipato attivamente a ogni task della build week, con concentrazione specifica sul Day 2 (XSS e cookie theft) e su tutte le CTF del team: Jangow01, Lupin One, Harry Potter / EPICODE e Il Riccio Pazzo.", github: null },
-  { id: "ck", name: "Christian Koscielniak Pinto", role: "Pen Testing · CTF · Report",               status: "online", initials: "CK",
-    bio: "Pen tester e cacciatore di flag. Ha collaborato con Lorenzo sulle attività LLM e su tutte le CTF della build week, contribuendo all'analisi degli exploit e alla redazione dei report tecnici.", github: null },
-  { id: "gc", name: "Gabriele Chinnici",           role: "LLM Specialist · Pen Testing",             status: "online", initials: "GC",
-    bio: "LLM specialist del team. Ha risolto la CTF Jangow01 con kernel exploit (CVE-45010) e progettato 'Il Riccio Pazzo', una CTF AI-powered costruita con Streamlit e OpenAI API. Unisce sicurezza offensiva e intelligenza artificiale applicata.", github: null },
-  { id: "ws", name: "Wafa Saghir",                 role: "C Dev · Malware Analysis · Report",        status: "online", initials: "WS",
-    bio: "Sviluppatrice C e analista malware. Ha implementato due exploit di buffer overflow (BoF #1 e BoF #2) con debugging GDB, incluso menu interattivo e report passo-passo (Day 3). Specializzata in analisi a basso livello e sicurezza del software.", github: null },
-  { id: "aa", name: "Amy Antonella Acosta Hugo",   role: "C Dev · Malware Analysis · Report",        status: "online", initials: "AA",
-    bio: "Sviluppatrice C e analista malware. Ha completato la CTF Hard 'Harry Potter / EPICODE' raccogliendo tre bandiere tramite SQL injection, port knocking e decrittografia AES. Produce report tecnici dettagliati con screenshot e catena d'attacco completa.", github: null },
-  { id: "dm", name: "Domenico Mendola",            role: "Pen Testing · CTF · Code",                 status: "online", initials: "DM",
-    bio: "Penetration tester specializzato in exploitation di servizi di rete. Ha condotto la ricognizione Samba con Nessus e Nmap, identificato CVE-2007-2447 e costruito l'exploit completo documentando l'intera kill-chain (Day 4).", github: null },
-  { id: "cv", name: "Corrado Vaccarecci",          role: "Pen Testing · CTF · Code",                 status: "online", initials: "CV",
-    bio: "Penetration tester e appassionato di CTF. Ha completato la CTF Lupin One con network recon, bruteforce della passphrase SSH e privilege escalation via sudo NOPASSWD. Produce walkthrough chiari e riproducibili con IOC documentati.", github: null },
+  { id: "lp", name: "Lorenzo Petrucci",            role: "Team Leader · Pen Testing / CTF / Report", status: "online", initials: "LP", photo: null,
+    bio: "Team leader del gruppo. Ha partecipato attivamente a ogni task della build week — Day 1 (SQL Injection), Day 2 (XSS & Cookie Theft), Day 3 (Buffer Overflow), Day 4 (Samba), Day 5 (Metasploit) — e a tutte le CTF del team: Jangow01, Lupin One, Harry Potter / EPICODE e Il Riccio Pazzo.", github: null },
+  { id: "ck", name: "Christian Koscielniak Pinto", role: "Pen Testing · CTF · Report",               status: "online", initials: "CK", photo: "christian.jpeg",
+    bio: "Pen tester e cacciatore di flag. Ha partecipato a tutte le CTF della build week (Jangow01, Lupin One, Harry Potter / EPICODE e Il Riccio Pazzo) e ha contribuito al progetto LLM AI-powered, collaborando all'analisi degli exploit e alla redazione dei report tecnici.", github: null },
+  { id: "gc", name: "Gabriele Chinnici",           role: "LLM Specialist · Pen Testing",             status: "online", initials: "GC", photo: "gabriele.jpg",
+    bio: "LLM specialist del team. Ha risolto le CTF Jangow01 e Lupin One, progettato 'Il Riccio Pazzo' (CTF AI-powered con Streamlit + OpenAI API) e si è occupato del Day 5 (Metasploit Professional). Unisce sicurezza offensiva e intelligenza artificiale applicata.", github: null },
+  { id: "ws", name: "Wafa Saghir",                 role: "C Dev · Malware Analysis · Report",        status: "online", initials: "WS", photo: "wafa.jpg",
+    bio: "Sviluppatrice C e analista malware. Si è occupata del Day 3 (Buffer Overflow in C): BoF #1 e BoF #2 con debugging GDB, menu interattivo e report passo-passo. Ha partecipato alla CTF Jangow01. Specializzata in analisi a basso livello e sicurezza del software.", github: null },
+  { id: "aa", name: "Amy Antonella Acosta Hugo",   role: "C Dev · Malware Analysis · Report",        status: "online", initials: "AA", photo: "amy.jpeg",
+    bio: "Sviluppatrice C e analista malware. Si è occupata del Day 3 (Buffer Overflow in C) e ha partecipato alla CTF Jangow01. Ha completato la CTF Hard 'Harry Potter / EPICODE' raccogliendo tre bandiere tramite SQL injection, port knocking e decrittografia AES. Produce report tecnici dettagliati con catena d'attacco completa.", github: null },
+  { id: "dm", name: "Domenico Mendola",            role: "Pen Testing · CTF · Code",                 status: "online", initials: "DM", photo: "domenico.jpg",
+    bio: "Penetration tester specializzato in exploitation di servizi di rete. Si è occupato del Day 4 (Samba Exploitation): ricognizione con Nessus e Nmap, identificazione CVE-2007-2447 e costruzione dell'exploit completo. Ha partecipato alla CTF Lupin One.", github: null },
+  { id: "cv", name: "Corrado Vaccarecci",          role: "Pen Testing · CTF · Code",                 status: "online", initials: "CV", photo: null,
+    bio: "Penetration tester e appassionato di CTF. Si è occupato del Day 1 (SQL Injection su DVWA) e ha partecipato alla CTF Jangow01. Ha completato la CTF Lupin One con network recon, bruteforce della passphrase SSH e privilege escalation via sudo NOPASSWD.", github: null },
 ];
 
 const REPO = {
@@ -80,7 +80,8 @@ const PROJECTS = [
     id: "#D01", slug: "day1", path: "day1", title: "Day 1 — SQL Injection su DVWA",
     status: "completed", sec: "SEC_LEVEL_3",
     desc: "Sfruttamento sistematico della vulnerabilità SQLi su DVWA: estrazione dati da database MySQL, guida illustrata + report PDF.",
-    tags: ["SQLi", "DVWA", "Burp Suite", "MySQL"], date: "20.04.26", owner: "LP",
+    tags: ["SQLi", "DVWA", "Burp Suite", "MySQL"], date: "20.04.26", owner: "CV",
+    participants: ["LP"],
     lang: "HTML", langColor: "#e34c26", url: tree("day1"),
     artifacts: [
       { name: "Guida_Illustrata_SQLi_DVWA_v2.html", kind: "guide", url: blob("day1/Guida_Illustrata_SQLi_DVWA_v2.html") },
@@ -93,7 +94,8 @@ const PROJECTS = [
     id: "#D02", slug: "day2", path: "day2", title: "Day 2 — XSS & Cookie Theft",
     status: "completed", sec: "SEC_LEVEL_3",
     desc: "Attacco XSS su DVWA, cattura cookie via Python (Flask), analisi dei dati rubati, logs CSV/JSONL.",
-    tags: ["XSS", "DVWA", "Python", "Flask"], date: "21.04.26", owner: "CK",
+    tags: ["XSS", "DVWA", "Python", "Flask"], date: "21.04.26", owner: "LP",
+    participants: ["CK"],
     lang: "Python", langColor: "#3572A5", url: tree("day2"),
     artifacts: [
       { name: "Guida_Illustrata_XSS_DVWA_v2.html", kind: "guide", url: blob("day2/Guida_Illustrata_XSS_DVWA_v2.html") },
@@ -107,6 +109,7 @@ const PROJECTS = [
     status: "completed", sec: "SEC_LEVEL_4",
     desc: "Sviluppo exploit per buffer overflow, debugging con GDB, overflow ASLR-aware. BoF #1, BoF #2 + menu interattivo.",
     tags: ["BoF", "GDB", "GCC", "C"], date: "22.04.26", owner: "WS",
+    participants: ["AA", "LP"],
     lang: "C", langColor: "#555555", url: tree("day3"),
     artifacts: [
       { name: "Script/Bof_01.c",   kind: "code", url: blob("day3/Script/Bof_01.c") },
@@ -121,6 +124,7 @@ const PROJECTS = [
     status: "completed", sec: "SEC_LEVEL_4",
     desc: "Ricognizione Samba con Nessus / Nmap, identificazione CVE, exploitation con tool custom, screenshot della catena d'attacco.",
     tags: ["Samba", "Nessus", "Nmap", "CVE"], date: "23.04.26", owner: "DM",
+    participants: ["LP"],
     lang: "PDF", langColor: "#b30b00", url: tree("day4"),
     artifacts: [
       { name: "Report_Day4_Samba_Exploit_DigitalAvengers.pdf", kind: "pdf", url: blob("day4/Report_Day4_Samba_Exploit_DigitalAvengers.pdf") },
@@ -131,7 +135,8 @@ const PROJECTS = [
     id: "#D05", slug: "day5", path: "day5", title: "Day 5 — Metasploit Professional",
     status: "completed", sec: "SEC_LEVEL_5",
     desc: "Automazione exploit via Metasploit Framework, moduli custom, post-exploitation, msfvenom + handler.",
-    tags: ["Metasploit", "msfvenom", "Post-Ex"], date: "24.04.26", owner: "LP",
+    tags: ["Metasploit", "msfvenom", "Post-Ex"], date: "24.04.26", owner: "GC",
+    participants: ["LP"],
     lang: "PDF", langColor: "#b30b00", url: tree("day5"),
     artifacts: [
       { name: "Report_Giorno5_Metasploit_Professionale.pdf", kind: "pdf", url: blob("day5/Report_Giorno5_Metasploit_Professionale.pdf") },
@@ -142,6 +147,7 @@ const PROJECTS = [
     status: "completed", sec: "SEC_LEVEL_4",
     desc: "Web CTF con kernel exploit (CVE-45010), escalazione privilegi, flag finale. Gobuster → Nmap → kernel exploit → root.",
     tags: ["CTF", "Gobuster", "Nmap", "Kernel"], date: "extra", owner: "GC",
+    participants: ["LP", "CK", "CV", "AA", "WS"],
     lang: "PDF", langColor: "#b30b00", url: tree("CTF-Jangow01"),
     artifacts: [
       { name: "Report_BuildWeek_Task_Extra01_Jangow01_DigitalAvengers.pdf", kind: "pdf", url: blob("CTF-Jangow01/Report_BuildWeek_Task_Extra01_Jangow01_DigitalAvengers.pdf") },
@@ -153,6 +159,7 @@ const PROJECTS = [
     status: "completed", sec: "SEC_LEVEL_3",
     desc: "Penetration testing indipendente con focus su exploitation e post-exploitation. Metasploit, network recon, privilege escalation.",
     tags: ["CTF", "Metasploit", "PrivEsc"], date: "extra", owner: "CV",
+    participants: ["LP", "CK", "GC", "DM"],
     lang: "PDF", langColor: "#b30b00", url: tree("CTF-LupinOne"),
     artifacts: [
       { name: "CTF_LupinOne_Report.pdf", kind: "pdf", url: blob("CTF-LupinOne/CTF_LupinOne_Report.pdf") },
@@ -164,6 +171,7 @@ const PROJECTS = [
     status: "completed", sec: "SEC_LEVEL_5",
     desc: "CTF livello DIFFICILE — 3 bandiere. Network recon, privilege escalation, SQLi, port knocking, decriptaggio.",
     tags: ["CTF", "SQLi", "Knocking", "Crypto"], date: "extra", owner: "AA",
+    participants: ["LP", "CK"],
     lang: "HTML", langColor: "#e34c26", url: tree("CTF-EpicodeHarryP"),
     artifacts: [
       { name: "Report_Day3_Bonus_BlackBox_DigitalAvengers.html", kind: "guide", url: blob("CTF-EpicodeHarryP/Report_Day3_Bonus_BlackBox_DigitalAvengers.html") },
@@ -175,6 +183,7 @@ const PROJECTS = [
     status: "completed", sec: "SEC_LEVEL_4",
     desc: "Challenge AI-powered: Streamlit + OpenAI API + puzzle CTF, costruita dal team. Interfaccia interattiva per enigmi di sicurezza.",
     tags: ["CTF", "Streamlit", "OpenAI", "Python"], date: "extra", owner: "GC",
+    participants: ["LP", "CK"],
     lang: "Python", langColor: "#3572A5", url: tree("CTF%20Extra%20-%20Il%20Riccio%20Pazzo%20(Fatta%20dal%20team)"),
     external: "https://github.com/Olliys/Riccio-Pazzo-CTF",
     artifacts: [
@@ -302,7 +311,7 @@ function Kbd({ children }) {
   );
 }
 
-function Avatar({ initials = "??", size = 24, tone, ring = false, title }) {
+function Avatar({ initials = "??", size = 24, tone, ring = false, title, photo }) {
   // More saturated palette, nods to the reference site.
   const palette = ["#22c55e","#14b8a6","#f59e0b","#e1615f","#8b5cf6","#06b6d4","#ef4444"];
   const hash = useMemo(() => {
@@ -311,6 +320,21 @@ function Avatar({ initials = "??", size = 24, tone, ring = false, title }) {
     return palette[h % palette.length];
   }, [initials]);
   const bg = tone || hash;
+  if (photo) {
+    return (
+      <span
+        title={title}
+        className={`inline-flex items-center justify-center rounded-full overflow-hidden ${ring ? "ring-2 ring-slate-950" : ""}`}
+        style={{ width: size, height: size, flexShrink: 0 }}
+      >
+        <img
+          src={photo}
+          alt={initials}
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
+        />
+      </span>
+    );
+  }
   return (
     <span
       title={title}
@@ -319,6 +343,7 @@ function Avatar({ initials = "??", size = 24, tone, ring = false, title }) {
         width: size, height: size,
         fontSize: Math.max(9, size * 0.38),
         background: `linear-gradient(135deg, ${bg}, ${bg}cc)`,
+        flexShrink: 0,
       }}
     >
       {initials}
@@ -367,7 +392,9 @@ function useMemberModal() {
 
 function MemberProfileModal({ memberId, onClose }) {
   const member = MEMBERS.find(m => m.id === memberId);
-  const deliverables = member ? PROJECTS.filter(p => p.owner === member.initials) : [];
+  const deliverables = member ? PROJECTS.filter(p =>
+    p.owner === member.initials || (p.participants || []).includes(member.initials)
+  ) : [];
 
   React.useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -411,7 +438,7 @@ function MemberProfileModal({ memberId, onClose }) {
         <div className="p-6">
           {/* Identity block */}
           <div className="flex items-start gap-4">
-            <Avatar initials={member.initials} size={56} />
+            <Avatar initials={member.initials} size={56} photo={member.photo} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h2 className="text-[18px] font-semibold tracking-tight text-slate-100">{member.name}</h2>
@@ -498,6 +525,7 @@ function buildUsers() {
       fullName: m.name,
       role: m.role.split("·")[0].trim(),
       initials: m.initials,
+      photo: m.photo || null,
     };
   });
 }
@@ -681,7 +709,7 @@ function LoginModal() {
                     className="inline-flex items-center gap-1 rounded border border-slate-800 bg-slate-900 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 hover:border-emerald-500/40 hover:text-emerald-300"
                     title="click to prefill username"
                   >
-                    <Avatar initials={m.initials} size={14} />
+                    <Avatar initials={m.initials} size={14} photo={m.photo} />
                     {first}
                   </button>
                 );
@@ -1465,7 +1493,7 @@ function Sidebar({ active, onNavigate }) {
                 className="group flex w-full items-center gap-2.5 rounded-md px-3 py-1.5 text-left transition-colors hover:bg-slate-800/60"
               >
                 <div className="relative shrink-0">
-                  <Avatar initials={m.initials} size={24} />
+                  <Avatar initials={m.initials} size={24} photo={m.photo} />
                   <span
                     className="absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-500 ring-2 ring-slate-900"
                     style={{ width: 8, height: 8 }}
@@ -1709,7 +1737,7 @@ function TopBar({ section, onNavigate }) {
         {user ? (
           <div className="flex items-center gap-1">
             <div className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900 py-1 pl-1 pr-2.5">
-              <Avatar initials={user.initials} size={22} />
+              <Avatar initials={user.initials} size={22} photo={user.photo} />
               <div className="leading-tight">
                 <div className="text-[11px] text-slate-200">{user.displayName}</div>
                 <div className="font-mono text-[9px] text-emerald-400">● {user.role.toLowerCase()}</div>
@@ -1821,7 +1849,7 @@ function Hero() {
                       title={`${m.name} — ${m.role}`}
                       className="relative flex w-full aspect-square items-center justify-center rounded-md border border-slate-800 bg-slate-900/80 transition-colors hover:border-emerald-500/40 hover:bg-slate-900 cursor-pointer"
                     >
-                      <Avatar initials={m.initials} size={28} />
+                      <Avatar initials={m.initials} size={28} photo={m.photo} />
                       <span className="absolute bottom-1 right-1 block h-1.5 w-1.5 rounded-full bg-emerald-500 ring-1 ring-slate-900" />
                     </button>
                     <div className={`pointer-events-none absolute left-1/2 z-[300] w-max -translate-x-1/2 scale-95 rounded-md border border-slate-800 bg-slate-950 px-2 py-1 opacity-0 shadow-xl transition-all group-hover:scale-100 group-hover:opacity-100 ${tooltipUp ? "bottom-full mb-1.5" : "top-full mt-1.5"}`}>
@@ -2016,7 +2044,7 @@ function ProjectCard({ p, idx }) {
           <ClassifiedStamp level={p.sec} />
         </div>
         <div className="flex items-center gap-2">
-          <Avatar initials={p.owner} size={18} />
+          <Avatar initials={p.owner} size={18} photo={MEMBERS.find(m => m.initials === p.owner)?.photo} />
           <span className="text-slate-500">{p.date}</span>
         </div>
       </div>
@@ -2477,7 +2505,7 @@ function CaseStudyHub() {
 
               <div className="mt-auto flex items-center justify-between border-t border-slate-800 pt-4">
                 <div className="flex items-center gap-2.5">
-                  <Avatar initials={active.writeup.author} size={26} />
+                  <Avatar initials={active.writeup.author} size={26} photo={MEMBERS.find(m => m.initials === active.writeup.author)?.photo} />
                   <div className="leading-tight">
                     <div className="text-[12px] text-slate-200">
                       {MEMBERS.find(m => m.initials === active.writeup.author)?.name || active.writeup.author}

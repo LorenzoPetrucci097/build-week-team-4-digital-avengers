@@ -1,0 +1,164 @@
+# 📘 ISTRUZIONI OPERATIVE — Build Week Setup
+
+> **Guida pratica** per usare al meglio il tuo assistente Claude durante la Build Week, in coppia con il prompt master e il template PDF.
+
+---
+
+## 📦 COSA HAI IN MANO
+
+| File | Scopo | Quando usarlo |
+|---|---|---|
+| `PROMPT_MASTER_BuildWeek.md` | Prompt di sistema da incollare come primo messaggio | **Inizio di ogni nuova chat** della Build Week |
+| `Template_Report_BuildWeek_Cybersecurity.pdf` | Struttura ufficiale del report enterprise | Riferimento + consegna finale per ogni task |
+| `Istruzioni_Operative.md` *(questo file)* | Guida d'uso del setup | Consulto rapido |
+
+---
+
+## 🚀 SETUP INIZIALE (una tantum, 5 minuti)
+
+1. **Apri il prompt master** → `PROMPT_MASTER_BuildWeek.md`
+2. **Compila i placeholder** che già conosci:
+   - `[NOME TEAM]` → appena ricevi il nome ufficiale
+   - `[Nome 1, Nome 2, ...]` → membri del team
+   - `[GG/MM – GG/MM/AAAA]` → date Build Week
+3. **Salva la versione compilata** (es. in un note app o snippet manager) così puoi ri-incollarla in ogni nuova chat
+
+> 💡 **Tip:** conserva anche il PDF template nel repo/drive condiviso del team — la struttura deve essere identica per tutti i report.
+
+---
+
+## 🎬 FLUSSO GIORNALIERO TIPICO
+
+### A) Apertura giornata
+1. Nuova chat Claude → incolla **prompt master compilato**
+2. Claude conferma ruolo e chiede primo task → incolla il task con comando `/task`
+3. Claude parte con il workflow a 4 fasi (Analisi → Piano → Esecuzione → Report)
+
+### B) Durante il task
+- Esegui gli step proposti e incolla **output reali** quando richiesti
+- Usa `/debug` + messaggio errore per troubleshooting mirato
+- Usa `/explain` + concetto se vuoi approfondire qualcosa senza deragliare il flusso
+- Usa `/bonus` quando la main è chiusa
+
+### C) Chiusura task
+- `/report` → Claude genera il contenuto del report secondo il template PDF
+- Copia il contenuto nei campi giusti del template (o genera un nuovo PDF compilato)
+- `/recap` → chiusura giornaliera con riepilogo
+
+### D) Handoff / pausa
+- `/hand-off` prima di chiudere → Claude produce un riepilogo passabile a un collega
+- `/status` → snapshot veloce dello stato
+
+---
+
+## 📝 BEST PRACTICE PER IL REPORT
+
+Per ogni task, compila **almeno** queste sezioni del template PDF:
+
+**Sempre (mandatory):**
+- Copertina con team name, task #, data, membri
+- Executive Summary (1 pagina max)
+- Descrizione del Task
+- Obiettivi Main/Bonus (tabella con stato ✔/⚠/✘)
+- Modus Operandi
+- Tool & Tecnologie
+- Risultati & Evidence
+- Lessons Learned
+
+**Quando applicabile:**
+- Threat Model → task di pentest, security design, threat modeling
+- MITRE ATT&CK → task offensivi, IR, threat hunting, malware analysis
+- IOC → malware analysis, incident response, forensics
+- Timeline → task operativi multi-step, IR, attack simulation
+- Codice → qualsiasi task con output di scripting/dev
+
+**Sempre aggiorna:**
+- Header/footer con nome team
+- Classificazione (default: CONFIDENTIAL)
+- Versione documento
+- Data di compilazione
+
+---
+
+## 🗂️ STRUTTURA SUGGERITA REPO PROGETTO
+
+```
+/BuildWeek_[TeamName]/
+├── prompts/
+│   └── prompt_master.md
+├── templates/
+│   └── Template_Report.pdf
+├── day1_task1_[nome]/
+│   ├── README.md
+│   ├── code/
+│   │   ├── exploit.py
+│   │   └── scanner.sh
+│   ├── evidence/
+│   │   ├── screenshots/
+│   │   └── logs/
+│   ├── iocs.csv
+│   └── Report_Day1_Task1_[TeamName].pdf
+├── day2_task1_[nome]/
+│   └── ...
+├── docs/
+│   ├── threat_models/
+│   └── references/
+└── final_summary/
+    └── BuildWeek_FinalReport_[TeamName].pdf
+```
+
+---
+
+## ⚡ COMANDI RAPIDI — CHEAT SHEET
+
+| Quando serve... | Scrivi a Claude... |
+|---|---|
+| Iniziare nuovo task | `/task` seguito dal testo del task |
+| Passare ai bonus | `/bonus` |
+| Generare report finale | `/report` |
+| Sapere a che punto sei | `/status` |
+| Risolvere un errore | `/debug` + paste dell'errore |
+| Approfondire un tema | `/explain` + concetto |
+| Passare lavoro a collega | `/hand-off` |
+| Riepilogo giornata | `/recap` |
+
+---
+
+## 🛡️ REMINDER SICUREZZA OPERATIVA
+
+- Tutti i test vanno eseguiti **solo in ambienti autorizzati** (lab, CTF, VM, poligoni approvati dagli organizzatori)
+- **Snapshot** delle VM prima di test distruttivi
+- **Nessun dato reale** di terzi nei report senza autorizzazione
+- **Sanitizzazione** di IOC/credenziali nei report pubblici (defanging: `hxxp`, `1.1.1[.]1`)
+- Classificazione del report: **CONFIDENTIAL** di default, alza se necessario
+- Backup del lavoro **giornaliero** su repo condiviso del team
+
+---
+
+## 🧩 TIPS PER MASSIMIZZARE L'AIUTO DI CLAUDE
+
+1. **Sii specifico negli input:** "mostrami un payload per sqli union-based su MySQL 8" batte "aiutami con sqli"
+2. **Incolla output completi:** log, errori, header HTTP — più contesto = risposte migliori
+3. **Dichiara l'ambiente:** OS target, versioni software, architettura → Claude adatta le tecniche
+4. **Segna il livello di accesso:** user, admin, root, domain admin — cambia radicalmente l'approccio
+5. **Valida sempre:** per exploit, PoC, comandi distruttivi → prima lab, poi target autorizzato
+6. **Chat separate per task separati:** meglio più sessioni focalizzate che una mega-chat chilometrica
+7. **Se Claude sbaglia:** digli l'output reale — si corregge e impara il contesto
+
+---
+
+## 🏁 CHECKLIST FINE BUILD WEEK
+
+A fine settimana, per il report consolidato:
+
+- [ ] Tutti i task individuali hanno report PDF consegnati
+- [ ] Report finale di settimana: sintesi di tutti i task con scoreboard
+- [ ] Repo pulito e organizzato secondo struttura standard
+- [ ] IOC aggregati in un unico file (`final_iocs.csv` o STIX)
+- [ ] Lessons learned del team consolidate
+- [ ] Presentazione conclusiva (se richiesta): max 10 slide
+- [ ] Sanitizzazione finale di tutti gli artefatti
+
+---
+
+**In bocca al lupo per la Build Week, team `[NOME TEAM]`! 🚀🔐**
